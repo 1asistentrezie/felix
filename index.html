@@ -681,7 +681,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 14:35";
+var APP_BUILD="17. 11. 14:50";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -2456,6 +2456,38 @@ function asInit(){AS.lvl=asLvl();AS.on=false;asUI();
   document.getElementById("asDn").onclick=function(){asSet(AS.lvl-1);};
   document.getElementById("asTop").onclick=function(){var box=document.getElementById("pdfPages");if(!box)return;var w=box.querySelector('[data-page="'+PDF_FROM+'"]');box.scrollTop=w?w.offsetTop-box.offsetTop-8:0;};document.getElementById("asUp").onclick=function(){asSet(AS.lvl+1);};
   document.getElementById("asSp").oninput=function(){asSet(+this.value);};}
+/* ---------- ostré zvětšení: po přiblížení prstama se viditelná část stránky překreslí v plném rozlišení ---------- */
+var SHARP={gen:0,t:null};
+function sharpClear(){[].slice.call(document.querySelectorAll("#pdfPages canvas.hi")).forEach(function(c){c.remove();});}
+function sharpQueue(){clearTimeout(SHARP.t);SHARP.t=setTimeout(sharpRun,220);}
+function sharpRun(){
+  var vv=window.visualViewport,box=document.getElementById("pdfPages"),doc=ANN&&ANN.pdf;
+  if(!box||!doc)return;
+  if(!vv||vv.scale<1.15){sharpClear();return;}
+  var gen=++SHARP.gen, dpr=window.devicePixelRatio||1, k=dpr*vv.scale, br=box.getBoundingClientRect();
+  var X0=Math.max(vv.offsetLeft,br.left),Y0=Math.max(vv.offsetTop,br.top),X1=Math.min(vv.offsetLeft+vv.width,br.right),Y1=Math.min(vv.offsetTop+vv.height,br.bottom);
+  var seen={};
+  [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(wrap){
+    var base=wrap.querySelector("canvas:not(.ann):not(.hi)");if(!base)return;
+    var r=wrap.getBoundingClientRect(),ix=Math.max(X0,r.left),iy=Math.max(Y0,r.top),ix1=Math.min(X1,r.right),iy1=Math.min(Y1,r.bottom);
+    if(ix1-ix<4||iy1-iy<4)return;
+    var rx=Math.floor(ix-r.left),ry=Math.floor(iy-r.top),rw=Math.ceil(ix1-ix)+1,rh=Math.ceil(iy1-iy)+1;
+    var kk=Math.min(k,Math.sqrt(9e6/(rw*rh)));
+    var pg=+wrap.getAttribute("data-page");seen[pg]=1;
+    doc.getPage(pg).then(function(page){if(gen!==SHARP.gen)return;
+      var v1=page.getViewport({scale:1}),v=page.getViewport({scale:r.width/v1.width*kk});
+      var c=document.createElement("canvas");c.className="hi";c.width=Math.round(rw*kk);c.height=Math.round(rh*kk);
+      c.style.cssText="position:absolute;left:"+rx+"px;top:"+ry+"px;width:"+rw+"px;height:"+rh+"px;box-shadow:none;border-radius:0;pointer-events:none";
+      return page.render({canvasContext:c.getContext("2d"),viewport:v,transform:[1,0,0,1,-rx*kk,-ry*kk]}).promise.then(function(){
+        if(gen!==SHARP.gen||!wrap.isConnected)return;
+        [].slice.call(wrap.querySelectorAll("canvas.hi")).forEach(function(o){o.remove();});
+        var ov=wrap.querySelector("canvas.ann");wrap.insertBefore(c,ov||null);});
+    }).catch(function(){});
+  });
+  [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(w){if(!seen[+w.getAttribute("data-page")])[].slice.call(w.querySelectorAll("canvas.hi")).forEach(function(o){o.remove();});});
+}
+if(window.visualViewport){visualViewport.addEventListener("resize",function(){if(document.getElementById("pdfPages"))sharpQueue();});visualViewport.addEventListener("scroll",function(){if(document.getElementById("pdfPages"))sharpQueue();});}
+document.addEventListener("scroll",function(e){if(e.target&&e.target.id==="pdfPages"&&window.visualViewport&&visualViewport.scale>=1.15)sharpQueue();},true);
 function closePdf(){AS.on=false;cancelAnimationFrame(AS.raf);var p=document.getElementById("pdfPanel");if(p)p.remove();}
 document.addEventListener("keydown",function(e){if(e.key==="Escape")closePdf();});
 
