@@ -715,7 +715,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 21:25";
+var APP_BUILD="17. 11. 21:45";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1003,7 +1003,7 @@ document.addEventListener("input",function(e){if(e.target.id==="fShareText")updW
 /* time of day · script day · page count, stacked next to the scene number */
 function shotMeta(r){var o=(typeof obrByScene==="function")?obrByScene(r.scene):null;return {den:r.den!=null&&r.den!==""?r.den:(o&&o.den||""),len:r.len!=null&&r.len!==""?r.len:(o&&o.len||"")};}
 function infoHTML(r,tapAttr){var m=shotMeta(r);
-  return '<span class="info"'+tapAttr+'>'+(r.tod?todChip(r.tod).replace("/","/<wbr>"):'<span class="tod none">—</span>')+
+  return '<span class="info"'+tapAttr+'>'+(r.tod?todChip(r.tod,1):'<span class="tod none">—</span>')+
     '<span class="sd'+(m.den?'':' none')+'">'+(m.den?esc(m.den):'den —')+'</span>'+
     '<span class="pg'+(m.len?'':' none')+'">'+(m.len?esc(m.len)+' str.':'str. —')+'</span></span>';}
 var MAX_ROLL=5;
@@ -1279,7 +1279,7 @@ function sheetHTML(){
         var when=e.shots.length?e.shots.map(function(x){var st=x.r.status==="done"?'<b class="cdone">natočeno '+esc(x.r.doneAt||"")+'</b>':x.r.status==="moved"?'<b class="cmoved">přesunuto</b>':x.r.status==="partial"?'<b class="cpart">částečně '+esc(x.r.doneAt||"")+'</b>':x.r.status==="rolling"?'<b class="croll">natáčí se</b>':'';
             return '<button class="cday" data-act="chrogo" data-day="'+x.d.id+'" data-id="'+x.r.id+'"><b>'+esc(x.d.label||"")+'</b> '+esc(x.d.date?fmtDate(x.d.date).replace(/ \d{4}$/,""):"")+(x.r.from?' · '+esc(x.r.from):'')+(st?' · '+st:'')+'</button>';}).join(""):'<span class="cnone">nenaplánováno</span>';
         return head+'<div class="chr'+(e.shots.some(function(x){return x.r.status==="done";})?' isdone':'')+'" data-ci="'+i+'"><span class="obrno">'+esc(e.scene)+'</span>'+
-          '<span class="chi">'+(e.tod?todChip(e.tod).replace("/","/<wbr>"):'')+(e.den?'<span class="csd">'+esc(e.den)+'</span>':'')+(e.len?'<span class="cpg">'+esc(e.len)+' str.</span>':'')+'</span>'+
+          '<span class="chi">'+(e.tod?todChip(e.tod,1):'')+(e.den?'<span class="csd">'+esc(e.den)+'</span>':'')+(e.len?'<span class="cpg">'+esc(e.len)+' str.</span>':'')+'</span>'+
           '<span class="obrb"><span class="obrm">'+esc(e.motif||"—")+'</span><span class="obrr">'+esc(e.roles||"")+'</span></span><span class="cwhen">'+when+'</span></div>';}).join("")+'</div>'+
       '<div class="actions"><div class="grp"></div><div class="grp"><button class="btn" data-act="close">Zavřít</button></div></div>';
     return '<div class="veil" data-act="veil"><div class="sheet wide" role="dialog" aria-modal="true">'+b+'</div></div>';
@@ -2269,44 +2269,64 @@ function parsePlan3(doc,onPage){
     if(res.title&&/NOVÁ\s+verze/i.test(res.title))res.version=res.title.replace(/^.*?(NOVÁ\s+verze)/i,"$1").trim();
     return res;});
 }
-/* "Felix" plán (A4 na výšku): Day #N - lokace: Fri 20/11/2026 06:45–16:45 - Pages: …; pruh = obraz | čas "07:30 -"/"09:30" | délka | Ext/Den + stránky | motiv | popis | role "1 - Felix"; události = "06:45 - 07:30" vlevo + text uprostřed */
+/* "Felix" plán (Day #N - lokace: Fri 20/11/2026 06:45–16:45 - Pages: …), na výšku i na šířku.
+   Sloupce se nehledají podle pevné polohy, ale podle obsahu: číslo obrazu (největší písmo vlevo), čas, délka, Ext/Den, stránky,
+   pak textové sloupce zleva: motiv, popis, role ("1 - Felix, …"), případně komparz. Události = čas + text na stejné řádce bez čísla obrazu. */
 function parsePlan4(doc,onPage){
   var n=doc.numPages, chain=Promise.resolve(), res={title:"",version:"",printed:"",days:[],timed:true}, cur=null, eventual=false;
   var hm2=function(x){var p=x.split(":");return pad(+p[0]%24)+":"+p[1];};
   var HEAD=/^Day\s*#\s*(\d+)\s*-?\s*(.*?):\s*(?:[A-Za-z]{3}\s+)?(\d{1,2})\/(\d{1,2})\/(\d{4})(.*)$/i;
-  var PGS=/^\d+(\s+\d\/8)?$|^\d\/8$/;
+  var PGS=/^\d+(\s+\d\/8)?$|^\d\/8$/, DUR=/^(\d+\s*h(\s*\d+)?|\d+\s*m(in)?|m|\d+h\d+m?)$/i, TOD=/^(int|ext|i\s*\+\s*e|int\/ext|ext\/int)\b/i, TT=/^\d{1,2}:\d{2}(\s*[–-]\s*(\d{1,2}:\d{2})?)?$/;
   function addDay(t){
     if(/^Day\s*Off/i.test(t)){cur=null;return true;}
     var m=HEAD.exec(t);if(!m)return false;
     var rest=m[6], tm=/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/.exec(rest), st=/(?:Pages|Stránek):\s*([\d\s\/]+)/i.exec(rest);
     cur={date:m[5]+"-"+pad(+m[4])+"-"+pad(+m[3]),num:+m[1],label:"FD "+m[1],location:m[2].trim(),shiftFrom:tm?hm2(tm[1]):"",shiftTo:tm?hm2(tm[2]):"",pages:st?st[1].trim():"",rows:[]};
     res.days.push(cur);eventual=false;return true;}
-  for(var i=1;i<=n;i++)(function(pg){chain=chain.then(function(){return doc.getPage(pg).then(function(page){return page.getTextContent();}).then(function(tc){
+  for(var i=1;i<=n;i++)(function(pg){chain=chain.then(function(){return doc.getPage(pg).then(function(page){var W=page.getViewport({scale:1}).width;return page.getTextContent().then(function(tc){return {tc:tc,W:W};});}).then(function(o){
+    var tc=o.tc, W=o.W;
     var its=tc.items.filter(function(it){return it.str&&it.str.trim();}).map(function(it){return {s:it.str.trim(),x:it.transform[4],y:it.transform[5],h:Math.round(it.height*10)/10};});
-    var heads=[],ids=[],etimes=[],rest=[];
+    var heads=[],body=[];
     its.forEach(function(it){
-      if(/^page\s*#/i.test(it.s))return;
-      if(/^tisk\s*:/i.test(it.s)){res.printed=it.s.replace(/^tisk\s*:\s*/i,"").replace(/(\d{4})(\d{1,2}:\d{2})/,"$1 $2");res.tiskY=it.y;return;}
-      if(pg===1&&it.h>=12){if(!res.title)res.title=it.s;return;}
+      if(/^page\s*#/i.test(it.s)||/^shoot\s*(start|end)$/i.test(it.s))return;
+      if(/^tisk\s*:/i.test(it.s)){res.printed=it.s.replace(/^tisk\s*:\s*/i,"").replace(/(\d{4})(\d{1,2}:\d{2})/,"$1 $2");return;}
       if(/^Day\s*(#|Off)/i.test(it.s)){heads.push(it);return;}
-      if(it.x<80&&TIME_RX.test(it.s)){etimes.push(it);return;}
-      if(it.x<80){ids.push(it);return;}
-      rest.push(it);});
-    /* události: čas vlevo + text (větší písmo) na stejné řádce */
-    var evs=etimes.map(function(t){var on=rest.filter(function(it){return Math.abs(it.y-t.y)<3&&it.h>=7.9&&it.x>=130;}).sort(function(a,b){return a.x-b.x;});
-      on.forEach(function(it){it.used=1;});var m=TIME_RX.exec(t.s);return {y:t.y,s:on.map(function(it){return it.s;}).join(" ").replace(/\s+/g," ").trim(),time:[m[1],m[2]]};});
-    /* události bez času: řádek větším písmem uprostřed, mimo sloupec rolí */
-    rest.forEach(function(it){if(it.used||it.h<7.9||it.x<200||it.x>=440)return;
-      var near=ids.some(function(d){return Math.abs(d.y-it.y)<40;});if(near)return;it.used=1;evs.push({y:it.y,s:it.s,time:null});});
-    rest=rest.filter(function(it){return !it.used;});
+      body.push(it);});
+    if(pg===1){var tmax=0;body.forEach(function(it){if(it.h>tmax)tmax=it.h;});var tt=body.filter(function(it){return it.h>=tmax-0.05&&it.x>W*0.25;})[0];
+      if(tt&&tmax>=11){if(!res.title)res.title=tt.s;body.splice(body.indexOf(tt),1);}}
+    /* čísla obrazů: největší písmo v levé části stránky */
+    var left=body.filter(function(it){return it.x<W*0.13&&!TT.test(it.s)&&!TIME_RX.test(it.s);}), idH=0;
+    left.forEach(function(it){if(it.h>idH)idH=it.h;});
+    var ids=left.filter(function(it){return it.h>=idH-0.3;});
+    body=body.filter(function(it){return ids.indexOf(it)<0;});
     ids.sort(function(a,b){return b.y-a.y;});
     var strips=[];ids.forEach(function(it){var q=strips[strips.length-1];
       if(q&&q.lastY-it.y<=17&&!/^\d/.test(it.s)){q.id+=it.s;q.lastY=it.y;q.ys.push(it.y);}
       else strips.push({id:it.s,lastY:it.y,ys:[it.y],items:[]});});
-    strips.forEach(function(s){s.y=s.ys.reduce(function(a,b){return a+b;},0)/s.ys.length;});
+    strips.forEach(function(s){s.y=s.ys.reduce(function(a,b){return a+b;},0)/s.ys.length;s.top=s.ys[0];s.bot=s.lastY;});
+    /* události: celý čas "06:45 - 07:30" bez čísla obrazu na řádce + text na stejné řádce */
+    var evs=[];
+    body.filter(function(it){return TIME_RX.test(it.s)&&it.x<W*0.2;}).forEach(function(t){
+      var nearId=strips.some(function(s){return t.y<=s.top+6&&t.y>=s.bot-6;});if(nearId)return;
+      var on=body.filter(function(it){return it!==t&&Math.abs(it.y-t.y)<3.2&&it.x>t.x;}).sort(function(a,b){return a.x-b.x;});
+      t.used=1;on.forEach(function(it){it.used=1;});var m=TIME_RX.exec(t.s);
+      evs.push({y:t.y,s:on.map(function(it){return it.s;}).join(" ").replace(/\s+/g," ").trim(),time:[m[1],m[2]]});});
+    var rest=body.filter(function(it){return !it.used;});
     var walls=evs.map(function(e){return e.y;}).concat(heads.map(function(h){return h.y;}));
     rest.forEach(function(it){var up=1e9,dn=-1e9;walls.forEach(function(w){if(w>it.y+1.5&&w<up)up=w;if(w<it.y-1.5&&w>dn)dn=w;});
       var b=null,bd=1e9;strips.forEach(function(s){if(s.y>=up||s.y<=dn)return;var d=Math.abs(s.y-it.y);if(d<bd){bd=d;b=s;}});if(b)b.items.push(it);});
+    /* typ položek a textové sloupce (podle polohy začátku textu na celé stránce) */
+    var txt=[];
+    strips.forEach(function(s){s.items.forEach(function(it){
+      if(TT.test(it.s))it.k="time";else if(DUR.test(it.s))it.k="dur";else if(TOD.test(it.s))it.k="tod";else if(PGS.test(it.s))it.k="pgs";
+      else txt.push(it);});});
+    /* pokračování denní doby ("Ext/podv" + "ečer") – malé slovo hned vedle/pod Ext/… */
+    strips.forEach(function(s){var td=s.items.filter(function(i){return i.k==="tod";})[0];if(!td)return;
+      s.items.forEach(function(it){if(!it.k&&/^[a-zčřžýáíéěůú]{2,8}$/.test(it.s)&&Math.abs(it.x-td.x)<25&&td.y-it.y>0&&td.y-it.y<10){it.k="tod2";txt.splice(txt.indexOf(it),1);}});});
+    var cols=[];txt.map(function(it){return it.x;}).sort(function(a,b){return a-b;}).forEach(function(x){var c=cols[cols.length-1];if(c&&x-c.x1<=6){c.x1=x;c.n++;}else cols.push({x0:x,x1:x,n:1});});
+    cols=cols.filter(function(c){return c.n>=1;});
+    var colOf=function(it){var k=-1;cols.forEach(function(c,j){if(it.x>=c.x0-3)k=j;});return k;};
+    var roleCol=-1,best=0;cols.forEach(function(c,j){var hits=txt.filter(function(it){return colOf(it)===j&&/(^|,\s*)R?\d+[A-Z]?\s*[-–]\s*\S/.test(it.s);}).length;if(hits>best){best=hits;roleCol=j;}});
     var anc=strips.map(function(s){return {y:s.y,strip:s};}).concat(evs.map(function(e){return {y:e.y,ev:e};})).concat(heads.map(function(h){return {y:h.y,head:h};}));
     anc.sort(function(a,b){return b.y-a.y;});
     anc.forEach(function(a){
@@ -2315,15 +2335,20 @@ function parsePlan4(doc,onPage){
       if(a.ev){var t=a.ev.s;if(!t)return;if(/pokud bude čas|eventuel/i.test(t))eventual=true;var ev=planEvent(t);
         if(a.ev.time&&!ev.commit){ev.from=hm2(a.ev.time[0]);ev.to=hm2(a.ev.time[1]);var L=toMin(ev.to)-toMin(ev.from);if(L<0)L+=1440;ev.len=L;}
         cur.rows.push(ev);return;}
-      var s=a.strip,col=function(x0,x1,f){return s.items.filter(function(i){return i.x>=x0&&i.x<x1&&(!f||f(i));}).sort(function(p,q){return (q.y-p.y)||(p.x-q.x);}).map(function(i){return i.s;});};
-      var tt=col(80,122).join(" ").replace(/\s+/g," "), tm=/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/.exec(tt);
-      var tod=col(138,172,function(i){return !PGS.test(i.s);}).join("").toUpperCase().replace(/\s+/g,"");
-      var len=(col(138,172,function(i){return PGS.test(i.s);})[0]||"").trim();
-      var motif=col(172,300).join(" ").replace(/\s+/g," ").replace(/,\s*$/,"").trim();
-      var desc=col(300,440).join(" ").replace(/\s+/g," ").trim();
-      var roles=col(440,2000).join(" ").replace(/\s+/g," ").replace(/,\s*$/,"").split(/,\s*(?=R?\s*\d+[A-Z]?\s*[-–])/).map(function(r){return r.replace(/\(!\)/g,"").replace(/\s+/g," ").trim();}).filter(Boolean);
+      var s=a.strip, ord=function(l){return l.sort(function(p,q){return (q.y-p.y)||(p.x-q.x);}).map(function(i){return i.s;});};
+      var pick=function(k){return ord(s.items.filter(function(i){return i.k===k;}));};
+      var tt=pick("time").join(" ").replace(/\s+/g," "), tm=/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/.exec(tt);
+      var tod=(pick("tod").join("")+pick("tod2").join("")).toUpperCase().replace(/\s+/g,"");
+      var len=(pick("pgs")[0]||"").trim();
+      var byCol=function(j){return ord(s.items.filter(function(i){return !i.k&&colOf(i)===j;})).reduce(function(acc,x){return !acc?x:(/\S-$/.test(acc)&&/^\p{Lu}/u.test(x)?acc+x:acc+" "+x);},"").replace(/\s+/g," ").trim();};
+      var tcols=[];for(var j=0;j<cols.length;j++)tcols.push(j);
+      var other=tcols.filter(function(j){return j!==roleCol&&(roleCol<0||j<roleCol);});
+      var motif=other.length?byCol(other[0]).replace(/,\s*$/,""):"", desc=other.slice(1).map(byCol).filter(Boolean).join(" ");
+      var roles=roleCol>=0?byCol(roleCol).replace(/,\s*$/,"").split(/,\s*(?=R?\s*\d+[A-Z]?\s*[-–])/).map(function(r){return r.replace(/\(!\)/g,"").replace(/\s+/g," ").trim();}).filter(Boolean):[];
+      var extra=roleCol>=0?tcols.filter(function(j){return j>roleCol;}).map(byCol).filter(Boolean).join(" "):"";
       var id=s.id.replace(/\s+/g,"").trim(), opt=/eventuel/i.test(id)||eventual; id=id.replace(/\s*event\S*$/i,"").replace(/^(\d+[A-Z]?)(část)(\d*)$/i,"$1 $2 $3").trim();
       var row={type:"shot",scene:id,tod:tod,len:len,den:"",motif:motif,desc:desc,roles:roles,optional:opt};
+      if(extra)row.note=extra;
       if(tm){row.from=hm2(tm[1]);row.to=hm2(tm[2]);}
       cur.rows.push(row);});
     if(onPage)onPage(pg,n,res.days.length);
@@ -2725,7 +2750,7 @@ function collectCast(){
 /* ---------- shot length: 0 min – 12 h in 5-min steps ---------- */
 var SHOT_LEN=60, NOTE_LEN=15;
 var TODS=[["INT/DEN","t-intden"],["EXT/DEN","t-extden"],["INT/PODVEČER","t-podv"],["EXT/PODVEČER","t-podv"],["INT/NOC","t-intnoc"],["EXT/NOC","t-extnoc"],["INT/RÁNO","t-intden"],["EXT/RÁNO","t-extden"],["I+E/DEN","t-extden"],["I+E/PODVEČER","t-podv"],["I+E/NOC","t-extnoc"]];
-function todChip(v){for(var i=0;i<TODS.length;i++)if(TODS[i][0]===v)return '<span class="tod '+TODS[i][1]+'">'+esc(v)+'</span>';return v?'<span class="tod">'+esc(v)+'</span>':'';}
+function todChip(v,wbr){var t=esc(v);if(wbr)t=t.replace("/","/<wbr>");for(var i=0;i<TODS.length;i++)if(TODS[i][0]===v)return '<span class="tod '+TODS[i][1]+'">'+t+'</span>';return v?'<span class="tod">'+t+'</span>':'';}
 function todSelect(cur){return '<label class="f"><span class="lab">Interiér / exteriér · denní doba</span><select id="fTod"><option value="">—</option>'+(cur&&!TODS.some(function(t){return t[0]===cur;})?'<option selected>'+esc(cur)+'</option>':'')+TODS.map(function(t){return '<option'+(t[0]===cur?' selected':'')+'>'+t[0]+'</option>';}).join("")+'</select></label>';}
 function fmtDurS(m){var h=Math.floor(m/60),n=m%60;return h?(h+'h'+(n?' '+n+'m':'')):n+' min';}
 function fmtDur(m){if(m==null)return "";m=Math.round(m);if(m<60)return m+" min";var h=Math.floor(m/60),r=m%60;return h+" h"+(r?" "+r+" min":"");}
