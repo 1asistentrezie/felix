@@ -415,6 +415,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 .info>.sd{background:#F6E3CF;border-color:#C9A27A;color:#3A2410}
 .info>.pg{background:#E6E9E8;border-color:#9AA09E;color:#15191B}
 .info>.tod.none,.info>.sd.none,.info>.pg.none{background:transparent;border-style:dashed;border-color:var(--line);color:var(--muted)}
+.info>.zb{background:#0B0D0E!important;border-color:#0B0D0E!important;color:#fff!important;font-size:12px;letter-spacing:.03em;white-space:normal;line-height:1.25;padding-block:2px}.info>.zb b{display:block;font-size:24px;line-height:1.05;font-weight:800;color:#fff;letter-spacing:.02em}
+.info>.zb.none{background:transparent!important;border-style:dashed!important;border-color:var(--line)!important;color:var(--muted)!important}
+@media (max-width:759px){.info>.zb{font-size:10px}.info>.zb b{font-size:18px}}
 .mr{display:flex;flex-direction:column;gap:6px;min-width:0}
 @media (max-width:759px){.info{grid-area:info}.mr{display:contents}.info>span{font-size:12px;padding:1px 3px;letter-spacing:0}.info>.tod{white-space:normal;overflow-wrap:normal;line-height:1.2}}
 @media (min-width:760px) and (max-width:1023px){
@@ -678,7 +681,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 13:55";
+var APP_BUILD="17. 11. 14:05";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -960,7 +963,8 @@ document.addEventListener("input",function(e){if(e.target.id==="fShareText")updW
 /* time of day · script day · page count, stacked next to the scene number */
 function shotMeta(r){var o=(typeof obrByScene==="function")?obrByScene(r.scene):null;return {den:r.den!=null&&r.den!==""?r.den:(o&&o.den||""),len:r.len!=null&&r.len!==""?r.len:(o&&o.len||"")};}
 function infoHTML(r,tapAttr){var m=shotMeta(r);
-  return '<span class="info"'+tapAttr+'>'+(r.tod?todChip(r.tod).replace("/","/<wbr>"):'<span class="tod none">—</span>')+
+  var zb=r.shots?'<span class="zb"><span class="zbl">POČET ZÁBĚRŮ</span><b>'+esc(r.shots)+'</b></span>':(canEdit?'<span class="zb none">záběry —</span>':'');
+  return '<span class="info"'+tapAttr+'>'+zb+(r.tod?todChip(r.tod).replace("/","/<wbr>"):'<span class="tod none">—</span>')+
     '<span class="sd'+(m.den?'':' none')+'">'+(m.den?esc(m.den):'den —')+'</span>'+
     '<span class="pg'+(m.len?'':' none')+'">'+(m.len?esc(m.len)+' str.':'str. —')+'</span></span>';}
 var MAX_ROLL=5;
@@ -1431,7 +1435,7 @@ function sheetHTML(){
       '<div class="nowbtns"><button class="btn sm" data-act="nowfrom" type="button">⏱ Od = teď</button><button class="btn sm" data-act="nowto" type="button">⏱ Do = teď</button><button class="btn sm" data-act="nowboth" type="button">Od i Do = teď</button></div>'+
       durSelect(spanMin(r.from,r.to),isShot?"Délka natáčení":"Jak dlouho trvá")+'<span class="hint">Konec se dopočítá ze začátku a délky. Délku můžete měnit po 5 minutách až do 12 hodin.</span>';
     if(isShot){
-      b+=placePick(s)+(s.isNew?obrPick():"")+field("fScene","Číslo obrazu",r.scene,"text",' inputmode="text"')+motifPick(r.motif)+field("fMotif","Název motivu",r.motif)+todSelect(r.tod||"")+'<div class="pair">'+field("fDen","Skript den",shotMeta(r).den,"text",' placeholder="např. Den 3"')+field("fLen","Počet stran",shotMeta(r).len,"text",' placeholder="např. 1 1/8"')+'</div>'+rolePicks(r.roles)+field("fRoles","Role (oddělené čárkou, můžete dopsat i další)",r.roles)+field("fNote","Poznámka (nepovinné)",r.note);
+      b+=placePick(s)+(s.isNew?obrPick():"")+field("fScene","Číslo obrazu",r.scene,"text",' inputmode="text"')+motifPick(r.motif)+field("fMotif","Název motivu",r.motif)+todSelect(r.tod||"")+'<div class="pair">'+field("fDen","Skript den",shotMeta(r).den,"text",' placeholder="např. Den 3"')+field("fLen","Počet stran",shotMeta(r).len,"text",' placeholder="např. 1 1/8"')+'</div>'+field("fShots","Počet záběrů",r.shots||"","text",' inputmode="numeric" placeholder="např. 6"')+rolePicks(r.roles)+field("fRoles","Role (oddělené čárkou, můžete dopsat i další)",r.roles)+field("fNote","Poznámka (nepovinné)",r.note);
       if(r.status==="done"||r.status==="moved"||r.status==="partial")b+=field("fDoneAt",r.status==="done"?"Natočeno v":r.status==="partial"?"Částečně natočeno v":"Uzavřeno v",r.doneAt,"time");
     } else {
       b+='<label class="chk"><input type="checkbox" id="fNoTime"'+(r.noTime?' checked':'')+'> Nezobrazovat u poznámky čas</label>'+'<label class="chk"><input type="checkbox" id="fNoState"'+(r.noState?' checked':'')+'> Nezobrazovat u poznámky stav</label>'+field("fText","Text",r.text)+(fin(r)?field("fDoneAt",r.status==="done"?"Skončeno v":"Uzavřeno v",r.doneAt,"time"):"");
@@ -2743,7 +2747,7 @@ function act(a,id,el){
     case "addnote": ui.addMenu=false; var pl0=curAnchor(d)?"cur":"end", nf2=placeFrom(d,pl0), k0=KINDS[0]; ui.sheet={kind:"row",isNew:true,place:pl0,data:{id:uid(),type:"note",kind:k0,from:nf2,to:hm(toMin(nf2)+KIND_LEN[k0]),text:"",status:"",doneAt:""}}; render(); break;
     case "saverow":{
       var r=ui.sheet.data, old0=ui.sheet.isNew?null:rowById(r.id), oldEnd=old0?endMin(old0.r):null; r.from=val("fFrom"); r.to=val("fTo");
-      if(r.type==="shot"){r.scene=val("fScene");r.motif=val("fMotif");r.tod=val("fTod");r.den=val("fDen");r.len=val("fLen");r.roles=sortRoles(val("fRoles").split(",").map(function(x){return x.trim();}).filter(Boolean)).join(", ");r.note=val("fNote");if(fin(r)||r.status==="partial")r.doneAt=val("fDoneAt");}
+      if(r.type==="shot"){r.scene=val("fScene");r.motif=val("fMotif");r.tod=val("fTod");r.den=val("fDen");r.len=val("fLen");r.shots=val("fShots");r.roles=sortRoles(val("fRoles").split(",").map(function(x){return x.trim();}).filter(Boolean)).join(", ");r.note=val("fNote");if(fin(r)||r.status==="partial")r.doneAt=val("fDoneAt");}
       else {r.kind=val("fKind");r.text=val("fText");var nt=document.getElementById("fNoTime");if(nt&&nt.checked)r.noTime=true;else delete r.noTime;var nst=document.getElementById("fNoState");if(nst&&nst.checked)r.noState=true;else delete r.noState;
         if((r.kind===KONEC_KIND||r.kind===MARTINI_KIND)&&(ui.sheet.isNew||!r.from)){r.from=nowHM();r.to=r.from;}if(!isActorEnd(r.kind)){delete r.actors;delete r.actorTimes;}if(fin(r)||r.status==="partial")r.doneAt=val("fDoneAt");}
       var rcI=-1, rcD=0;
