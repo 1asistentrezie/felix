@@ -163,7 +163,7 @@ body.ed::before{background:#000}
 
 /* rows */
 .cols,.row{display:grid;grid-template-columns:30px 128px 100px 78px minmax(0,1fr) 82px 44px 156px;gap:0 14px;align-items:center}
-.cols{padding:0 12px 6px;font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.cols{padding:3px 12px;margin-bottom:6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-family:var(--f-display);font-weight:600;font-size:10px;line-height:1.2;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
 .rows{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
 .row{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-height:64px}
 .row.current{outline:4px solid var(--roll);outline-offset:-2px;background:var(--roll-bg)}
@@ -714,7 +714,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 20:45";
+var APP_BUILD="17. 11. 21:00";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1080,7 +1080,7 @@ function render(){zoomApply();
   document.getElementById("app").innerHTML=
     '<header class="bar'+(ui.track?' tracking':'')+(canEdit?' ed':'')+'" id="bar">'+headerHTML(d)+'</header>'+
     '<div class="tools">'+tools+'</div>'+
-    '<div class="cols" aria-hidden="true"><span></span><span>Čas</span><span>Obraz</span><span>Doba · den · str.</span><span>Motiv · role</span><span></span><span></span><span>Stav</span></div>'+
+    '<div class="cols" aria-hidden="true"><span></span><span>Čas</span><span>Obraz</span><span></span><span>Motiv · role</span><span></span><span></span><span>Stav</span></div>'+
     list+add+(WEB&&!canEdit?'<div class="loginbar"><button class="linkbtn" data-act="login">Přihlásit (editor)</button></div>':'')+(ui.sheet?sheetHTML():"")+'<div id="toastBox"></div>';
   if(typeof liveInd==="function")liveInd();
 }
