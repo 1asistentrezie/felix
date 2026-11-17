@@ -415,9 +415,10 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 .info>.sd{background:#F6E3CF;border-color:#C9A27A;color:#3A2410}
 .info>.pg{background:#E6E9E8;border-color:#9AA09E;color:#15191B}
 .info>.tod.none,.info>.sd.none,.info>.pg.none{background:transparent;border-style:dashed;border-color:var(--line);color:var(--muted)}
-.info>.zb{background:#0B0D0E!important;border-color:#0B0D0E!important;color:#fff!important;font-size:12px;letter-spacing:.03em;white-space:normal;line-height:1.25;padding-block:2px}.info>.zb b{display:block;font-size:24px;line-height:1.05;font-weight:800;color:#fff;letter-spacing:.02em}
+.info>.zb{background:#0B0D0E!important;border-color:#0B0D0E!important;color:#fff!important;font-size:8px;letter-spacing:.03em;white-space:nowrap;line-height:1.1;padding-block:1px}.info>.zb b{display:block;font-size:14px;line-height:1;font-weight:800;color:#fff;letter-spacing:.02em}
 .info>.zb.none{background:transparent!important;border-style:dashed!important;border-color:var(--line)!important;color:var(--muted)!important}
-@media (max-width:759px){.info>.zb{font-size:10px}.info>.zb b{font-size:18px}}
+.info>.zb .zbl{display:block;font-size:8px!important;letter-spacing:.02em;overflow:hidden;text-overflow:clip}
+@media (max-width:759px){.info>.zb .zbl{font-size:7px!important}.info>.zb b{font-size:12px}}
 .mr{display:flex;flex-direction:column;gap:6px;min-width:0}
 @media (max-width:759px){.info{grid-area:info}.mr{display:contents}.info>span{font-size:12px;padding:1px 3px;letter-spacing:0}.info>.tod{white-space:normal;overflow-wrap:normal;line-height:1.2}}
 @media (min-width:760px) and (max-width:1023px){
@@ -681,7 +682,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 14:05";
+var APP_BUILD="17. 11. 14:10";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
