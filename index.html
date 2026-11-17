@@ -415,10 +415,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 .info>.sd{background:#F6E3CF;border-color:#C9A27A;color:#3A2410}
 .info>.pg{background:#E6E9E8;border-color:#9AA09E;color:#15191B}
 .info>.tod.none,.info>.sd.none,.info>.pg.none{background:transparent;border-style:dashed;border-color:var(--line);color:var(--muted)}
-.info>.zb{background:#0B0D0E!important;border-color:#0B0D0E!important;color:#fff!important;font-size:8px;letter-spacing:.03em;white-space:nowrap;line-height:1.1;padding-block:1px}.info>.zb b{display:block;font-size:14px;line-height:1;font-weight:800;color:#fff;letter-spacing:.02em}
-.info>.zb.none{background:transparent!important;border-style:dashed!important;border-color:var(--line)!important;color:var(--muted)!important}
-.info>.zb .zbl{display:block;font-size:8px!important;letter-spacing:.02em;overflow:hidden;text-overflow:clip}
-@media (max-width:759px){.info>.zb .zbl{font-size:7px!important}.info>.zb b{font-size:12px}}
+.durs{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap}.durs .dur{margin-top:0}
+.dur.zbd{background:#0B0D0E;border-color:#0B0D0E;color:#fff}
 .mr{display:flex;flex-direction:column;gap:6px;min-width:0}
 @media (max-width:759px){.info{grid-area:info}.mr{display:contents}.info>span{font-size:12px;padding:1px 3px;letter-spacing:0}.info>.tod{white-space:normal;overflow-wrap:normal;line-height:1.2}}
 @media (min-width:760px) and (max-width:1023px){
@@ -573,6 +571,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
   .row.shot .time[class*=" pc-"]{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:7px;align-items:start;justify-items:start}
   .row.shot .time[class*=" pc-"]>span:first-child{grid-column:1;grid-row:1;margin-left:0}
   .row.shot .time[class*=" pc-"] .dur{grid-column:1;grid-row:2}
+  .row.shot .time[class*=" pc-"] .durs{grid-column:1;grid-row:2}
   .row.shot .time[class*=" pc-"] .pace{grid-column:2;grid-row:1;display:flex}
   .row.shot .time[class*=" pc-"] .tb{margin-top:0;font-size:15px;padding:2px 6px}
   .row.shot .time[class*=" pc-"] .tb small{font-size:9px}
@@ -682,7 +681,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 14:20";
+var APP_BUILD="17. 11. 14:30";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -964,8 +963,7 @@ document.addEventListener("input",function(e){if(e.target.id==="fShareText")updW
 /* time of day · script day · page count, stacked next to the scene number */
 function shotMeta(r){var o=(typeof obrByScene==="function")?obrByScene(r.scene):null;return {den:r.den!=null&&r.den!==""?r.den:(o&&o.den||""),len:r.len!=null&&r.len!==""?r.len:(o&&o.len||"")};}
 function infoHTML(r,tapAttr){var m=shotMeta(r);
-  var zb=r.shots?'<span class="zb"><span class="zbl">POČET ZÁBĚRŮ</span><b>'+esc(r.shots)+'</b></span>':(canEdit?'<span class="zb none">záběry —</span>':'');
-  return '<span class="info"'+tapAttr+'>'+zb+(r.tod?todChip(r.tod).replace("/","/<wbr>"):'<span class="tod none">—</span>')+
+  return '<span class="info"'+tapAttr+'>'+(r.tod?todChip(r.tod).replace("/","/<wbr>"):'<span class="tod none">—</span>')+
     '<span class="sd'+(m.den?'':' none')+'">'+(m.den?esc(m.den):'den —')+'</span>'+
     '<span class="pg'+(m.len?'':' none')+'">'+(m.len?esc(m.len)+' str.':'str. —')+'</span></span>';}
 var MAX_ROLL=5;
@@ -1004,7 +1002,7 @@ function rowHTML(r){
   else if(canEdit&&locked) state='<span class="stav s-none locked" title="Nejdřív uzavřete předchozí obraz"><span>STAV</span><span class="t">po předchozím</span></span>';
   else state=r.status?'<span class="stav s-'+r.status+'">'+inner+'</span>':'<span class="wait">čeká</span>';
   return '<li class="row shot'+(r.status==="rolling"?' current':'')+(r.status==="done"?' done':'')+(r.status==="moved"?' moved':'')+(r.status==="partial"?' partial':'')+'" data-id="'+r.id+'">'+h+
-    '<span class="time'+paceCls(r)+'"'+tapAttr+'><span>'+(time||"—")+'</span>'+(spanMin(r.from,r.to)!=null?'<span class="dur">'+fmtDur(spanMin(r.from,r.to))+'</span>':'')+paceHTML(r)+planLine(r)+'</span>'+
+    '<span class="time'+paceCls(r)+'"'+tapAttr+'><span>'+(time||"—")+'</span>'+(spanMin(r.from,r.to)!=null||r.shots?'<span class="durs">'+(spanMin(r.from,r.to)!=null?'<span class="dur">'+fmtDur(spanMin(r.from,r.to))+'</span>':'')+(r.shots?'<span class="dur zbd">Záběrů: '+esc(r.shots)+'</span>':'')+'</span>':'')+paceHTML(r)+planLine(r)+'</span>'+
     '<span class="no'+(String(r.scene||"").length>6?' sz-l':String(r.scene||"").length>4?' sz-m':'')+'"'+tapAttr+'><small>OBRAZ</small>'+esc(r.scene||"–")+'</span>'+
     infoHTML(r,tapAttr)+
     '<span class="mr"><span class="motif"'+tapAttr+'>'+esc(r.motif||"")+(r.note?'<span class="memo">'+esc(r.note)+'</span>':'')+
