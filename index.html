@@ -38,6 +38,7 @@ html[data-theme="f"]{--bg:#0C1411;--surface:#15221D;--ink:#E6F0EB;--muted:#93AAA
 /* téma „Papír“ (výchozí): světlá stránka, černé horní menu */
 .bar{--bg:#15191B;--surface:#0B0D0E;--ink:#EEF1F0;--muted:#9AA4A8;--line:#2A3236;background:#0B0D0E;color:#EEF1F0;color-scheme:dark}
 body::before{background:#0B0D0E!important}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.35}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
 #app{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 96px;max-width:1180px;margin:0 auto}
@@ -714,7 +715,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 21:00";
+var APP_BUILD="17. 11. 21:15";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
