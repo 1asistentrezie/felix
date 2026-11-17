@@ -99,6 +99,11 @@ body.ed::before{background:#000}
 .status.late{background:var(--late);color:var(--on-strong)}
 .s-clock{flex:0 0 auto;align-items:flex-end;text-align:right}
 .s-menu{flex:0 0 auto;display:flex;align-items:center}
+#bar{zoom:var(--unzoom,1)}
+.s-zoom{flex:0 0 auto;display:flex;align-items:center;gap:0;border:1px solid rgba(255,255,255,.22);border-radius:8px;overflow:hidden;margin-inline:2px 6px}
+.s-zoom button{background:transparent;color:#fff;border:0;font:inherit;font-weight:800;font-size:22px;line-height:1;min-width:38px;height:40px;padding:0 6px;cursor:pointer}
+.s-zoom button.zv{font-size:12px;letter-spacing:.04em;min-width:46px;color:rgba(255,255,255,.75);border-inline:1px solid rgba(255,255,255,.22)}
+.s-zoom button:disabled{opacity:.3;cursor:default}.s-zoom button:active{background:rgba(255,255,255,.12)}
 .menubtn{min-height:48px;min-width:48px;border:1px solid var(--line);border-radius:8px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 10px;
   font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.12em;color:var(--muted)}
 .menubtn .bars{display:flex;flex-direction:column;gap:3px}
@@ -356,7 +361,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 @media (max-width:759px){
   /* phone header: two rows — projekt · datum · čas / lokace · směna · stopky */
   .bar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"proj date clock" "loc shift watch";gap:4px 10px;padding-block:6px;align-items:center}
-  .s-menu,.s-sun{display:none}
+  .s-menu,.s-sun,.s-zoom{display:none}
   .s-proj{grid-area:proj}.s-date{grid-area:date}.s-clock{grid-area:clock}
   .s-loc{grid-area:loc}.s-shift{grid-area:shift}.s-watch{grid-area:watch;justify-content:flex-end}
   .bar .s-watch.is-open{grid-area:watch;width:auto;justify-self:end}
@@ -683,7 +688,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 19:45";
+var APP_BUILD="17. 11. 20:00";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -820,12 +825,18 @@ function leftTxt(d){
   var l=shiftLeft(d); if(l==null)return esc(d.shiftTo);
   return l>=0?dur(l):"skončila";
 }
+/* ---------- velikost zobrazení (zoom + / −), pamatuje se v tomto prohlížeči ---------- */
+var ZOOMS=[.6,.7,.8,.9,1,1.1,1.2,1.3,1.4,1.5,1.6];
+function zoomGet(){var z=+(LS.getItem("nd.zoom")||1);return z>=.5&&z<=2?z:1;}
+function zoomApply(){var a=document.getElementById("app"),z=zoomGet();if(!a)return;a.style.zoom=z===1?"":String(z);a.style.setProperty("--unzoom",z===1?"1":String(1/z));}
+function zoomStep(dir){var z=zoomGet(),i=0,b=1e9;ZOOMS.forEach(function(v,j){var dd=Math.abs(v-z);if(dd<b){b=dd;i=j;}});i=Math.max(0,Math.min(ZOOMS.length-1,i+dir));try{LS.setItem("nd.zoom",String(ZOOMS[i]));}catch(_){}zoomApply();render();}
+function zoomHTML(){var z=zoomGet();return '<div class="s-zoom" role="group" aria-label="Velikost zobrazení"><button data-act="zoomout" aria-label="Zmenšit"'+(z<=ZOOMS[0]?' disabled':'')+'>−</button><button class="zv" data-act="zoomreset" title="Původní velikost">'+Math.round(z*100)+' %</button><button data-act="zoomin" aria-label="Zvětšit"'+(z>=ZOOMS[ZOOMS.length-1]?' disabled':'')+'>+</button></div>';}
 function headerHTML(d){
   var st=status(d), t=new Date(), sun=null, pl=sunPlace(d);
   if(d.date)sun=sunTimes(d.date,pl.lat,pl.lon);
   var p=d.date?d.date.split("-"):null, dw=p?DOW[new Date(+p[0],+p[1]-1,+p[2]).getDay()]:"";
   var left=d.shiftTo?leftTxt(d):"";
-  return (canEdit?'':'<div class="s-menu" hidden></div>')+'<div class="s-menu'+(canEdit?'':' ro-hide')+'"><button class="menubtn" data-act="menu" aria-label="Menu"><span class="bars"><i></i><i></i><i></i></span>MENU</button></div>'+
+  return (canEdit?'':'<div class="s-menu" hidden></div>')+'<div class="s-menu'+(canEdit?'':' ro-hide')+'"><button class="menubtn" data-act="menu" aria-label="Menu"><span class="bars"><i></i><i></i><i></i></span>MENU</button></div>'+zoomHTML()+
     '<div class="slot s-proj'+(canEdit?' tap" data-act="project':'')+'"><span class="lab">Projekt</span><span class="big">'+(S.project?esc(S.project):'<span class="ph">'+(canEdit?'Zadat název':'—')+'</span>')+'</span></div>'+
     '<div class="slot s-date'+(canEdit?' tap" data-act="editdate':'')+'"><span class="lab">'+(dw?esc(dw):"Datum")+(d.label?' · '+esc(d.label):'')+'</span><span class="big">'+(p?(+p[2])+'. '+(+p[1])+'. '+p[0]:"—")+'</span></div>'+
     '<div class="slot s-loc'+(canEdit?' tap" data-act="shiftloc':'')+'"><span class="lab">Lokace</span><span class="loc">'+esc(d.location||"—")+'</span></div>'+
@@ -1016,7 +1027,7 @@ function rowHTML(r){
 /* viewers see only the current shooting day: today, else the next one, else the last */
 function viewerDay(){var t=todayISO(),ds=S.days.filter(function(x){return x.date;}).slice().sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;});
   return ds.filter(function(x){return x.date===t;})[0]||ds.filter(function(x){return x.date>t;})[0]||ds[ds.length-1]||S.days[0];}
-function render(){
+function render(){zoomApply();
   try{document.body.classList.toggle("ed",!!canEdit);}catch(_){}
   if(!canEdit&&!standalone&&!ui.dayPicked){var vd=viewerDay(); if(vd)ui.dayId=vd.id;}
   var d=day(); ui.dayId=d.id;
@@ -2869,6 +2880,9 @@ function act(a,id,el){
     case "savedate": d.date=val("fDate"); d.label=val("fLabel"); S.days.sort(function(a,b){return a.date<b.date?-1:a.date>b.date?1:0;}); ui.sheet=null; changed(); break;
     case "track": ui.track=!ui.track; tick(); break;
     case "loc": if(x){ui.sheet={kind:"loc",id:id};render();} break;
+    case "zoomin": zoomStep(1); break;
+    case "zoomout": zoomStep(-1); break;
+    case "zoomreset": try{LS.removeItem("nd.zoom");}catch(_){} zoomApply(); render(); break;
     case "brkopen": if(x){ui.sheet=null;if(canEdit&&!hasDoc(x.r,"brk")){docList("brk");ui.sheet={kind:"pages",id:id,dk:"brk"};render();}else{render();showPdf(x.r,"brk");}} break;
     case "imgfull": {var sk=el&&el.getAttribute("data-src"),io=sk==="loc"?S.locImg:(x?sceneImg(x.r):null);if(io)imgFull(imgSrc(io));} break;
     case "locimg": imgPick(function(o){if(S.locImg)imgDrop(S.locImg);S.locImg=o;}); break;
@@ -3072,7 +3086,7 @@ document.addEventListener("click",function(e){
   var el=e.target.closest("[data-act]"); if(!el)return;
   var a=el.getAttribute("data-act");
   if(a==="veil"&&e.target!==el)return;
-  if(!canEdit&&["close","veil","refresh","track","toggledone","dej","loc","themesheet","theme","pushon","pushoff","forgot","setnewpass","book","lupa","mynote","brkopen","imgfull","dayprev","daynext","login","dologin"].indexOf(a)<0)return;
+  if(!canEdit&&["close","veil","refresh","track","toggledone","dej","loc","themesheet","theme","pushon","pushoff","forgot","setnewpass","book","lupa","mynote","zoomin","zoomout","zoomreset","brkopen","imgfull","dayprev","daynext","login","dologin"].indexOf(a)<0)return;
   act(a,el.getAttribute("data-id"),el);
 });
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="fFileName"){e.preventDefault();act("dosave");}if(e.key==="Enter"&&(e.target.id==="fPass"||e.target.id==="fEmail")){e.preventDefault();act("dologin");}});
