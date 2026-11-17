@@ -415,7 +415,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 .info>.sd{background:#F6E3CF;border-color:#C9A27A;color:#3A2410}
 .info>.pg{background:#E6E9E8;border-color:#9AA09E;color:#15191B}
 .info>.tod.none,.info>.sd.none,.info>.pg.none{background:transparent;border-style:dashed;border-color:var(--line);color:var(--muted)}
-.durs{display:flex;align-items:center;gap:5px;margin-top:3px;flex-wrap:wrap}.durs .dur{margin-top:0}
+.durs{display:flex;align-items:center;gap:4px;margin-top:3px;flex-wrap:nowrap;white-space:nowrap}.durs .dur{margin-top:0;flex:none}.durs .dur+.dur{font-size:12px;padding:0 5px}.durs:has(.zbd) .dur{font-size:12px;padding:0 5px}
 .dur.zbd{background:#0B0D0E;border-color:#0B0D0E;color:#fff}
 .mr{display:flex;flex-direction:column;gap:6px;min-width:0}
 @media (max-width:759px){.info{grid-area:info}.mr{display:contents}.info>span{font-size:12px;padding:1px 3px;letter-spacing:0}.info>.tod{white-space:normal;overflow-wrap:normal;line-height:1.2}}
@@ -681,7 +681,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 14:30";
+var APP_BUILD="17. 11. 14:35";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1002,7 +1002,7 @@ function rowHTML(r){
   else if(canEdit&&locked) state='<span class="stav s-none locked" title="Nejdřív uzavřete předchozí obraz"><span>STAV</span><span class="t">po předchozím</span></span>';
   else state=r.status?'<span class="stav s-'+r.status+'">'+inner+'</span>':'<span class="wait">čeká</span>';
   return '<li class="row shot'+(r.status==="rolling"?' current':'')+(r.status==="done"?' done':'')+(r.status==="moved"?' moved':'')+(r.status==="partial"?' partial':'')+'" data-id="'+r.id+'">'+h+
-    '<span class="time'+paceCls(r)+'"'+tapAttr+'><span>'+(time||"—")+'</span>'+(spanMin(r.from,r.to)!=null||r.shots?'<span class="durs">'+(spanMin(r.from,r.to)!=null?'<span class="dur">'+fmtDur(spanMin(r.from,r.to))+'</span>':'')+(r.shots?'<span class="dur zbd">Záběrů: '+esc(r.shots)+'</span>':'')+'</span>':'')+paceHTML(r)+planLine(r)+'</span>'+
+    '<span class="time'+paceCls(r)+'"'+tapAttr+'><span>'+(time||"—")+'</span>'+(spanMin(r.from,r.to)!=null||r.shots?'<span class="durs">'+(spanMin(r.from,r.to)!=null?'<span class="dur">'+(r.shots?fmtDurS(spanMin(r.from,r.to)):fmtDur(spanMin(r.from,r.to)))+'</span>':'')+(r.shots?'<span class="dur zbd">Záběrů: '+esc(r.shots)+'</span>':'')+'</span>':'')+paceHTML(r)+planLine(r)+'</span>'+
     '<span class="no'+(String(r.scene||"").length>6?' sz-l':String(r.scene||"").length>4?' sz-m':'')+'"'+tapAttr+'><small>OBRAZ</small>'+esc(r.scene||"–")+'</span>'+
     infoHTML(r,tapAttr)+
     '<span class="mr"><span class="motif"'+tapAttr+'>'+esc(r.motif||"")+(r.note?'<span class="memo">'+esc(r.note)+'</span>':'')+
@@ -2604,6 +2604,7 @@ var SHOT_LEN=60, NOTE_LEN=15;
 var TODS=[["INT/DEN","t-intden"],["EXT/DEN","t-extden"],["INT/PODVEČER","t-podv"],["EXT/PODVEČER","t-podv"],["INT/NOC","t-intnoc"],["EXT/NOC","t-extnoc"],["INT/RÁNO","t-intden"],["EXT/RÁNO","t-extden"],["I+E/DEN","t-extden"],["I+E/PODVEČER","t-podv"],["I+E/NOC","t-extnoc"]];
 function todChip(v){for(var i=0;i<TODS.length;i++)if(TODS[i][0]===v)return '<span class="tod '+TODS[i][1]+'">'+esc(v)+'</span>';return v?'<span class="tod">'+esc(v)+'</span>':'';}
 function todSelect(cur){return '<label class="f"><span class="lab">Interiér / exteriér · denní doba</span><select id="fTod"><option value="">—</option>'+(cur&&!TODS.some(function(t){return t[0]===cur;})?'<option selected>'+esc(cur)+'</option>':'')+TODS.map(function(t){return '<option'+(t[0]===cur?' selected':'')+'>'+t[0]+'</option>';}).join("")+'</select></label>';}
+function fmtDurS(m){var h=Math.floor(m/60),n=m%60;return h?(h+'h'+(n?' '+n+'m':'')):n+' min';}
 function fmtDur(m){if(m==null)return "";m=Math.round(m);if(m<60)return m+" min";var h=Math.floor(m/60),r=m%60;return h+" h"+(r?" "+r+" min":"");}
 function spanMin(from,to){var a=toMin(from),b=toMin(to);if(a==null||b==null)return null;var d=b-a;if(d<0)d+=1440;return d;}
 function durSelect(cur,label){
