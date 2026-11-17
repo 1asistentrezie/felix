@@ -618,7 +618,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 @media (max-width:759px){.row.note .origplan{display:block;flex-basis:100%}}
 .btn.rfed.hist{width:44px}.btn.rfed:disabled{opacity:.35;cursor:default}
 .btn.rfed{display:inline-grid;place-items:center;padding:0;width:44px;min-width:44px;aspect-ratio:1/1;align-self:stretch}
-.daynav{display:inline-flex;align-items:stretch;gap:4px}.daynav select{width:auto;min-width:0}
+.daynav{display:inline-flex;align-items:stretch;gap:4px}.daynav select{width:auto;flex:0 0 auto}
 .btn.dnav{width:44px;padding:0;font-size:28px;line-height:1;font-weight:600;display:grid;place-items:center}.btn.dnav:disabled{opacity:.3}
 @media (max-width:759px){.tools .daynav{flex:1 1 100%}.tools .daynav select{flex:1 1 auto}}
 .btn.addbtn{padding-inline:12px;font-weight:700;gap:2px}.addbtn .apl{font-weight:800}
@@ -715,7 +715,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 21:15";
+var APP_BUILD="17. 11. 21:25";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1060,7 +1060,7 @@ function render(){zoomApply();
   var d=day(); ui.dayId=d.id;
   var DS=daysSorted();var opts=DS.map(function(x){return '<option value="'+x.id+'"'+(x.id===d.id?' selected':'')+'>'+esc(shortDay(x))+'</option>';}).join("");
   var di=DS.indexOf(d);
-  var tools=(canEdit||standalone||DS.length>1?'<span class="daynav"><button class="btn dnav" data-act="dayprev" aria-label="Předchozí den"'+(di>0?'':' disabled')+'>‹</button><select id="daySel" aria-label="Natáčecí den">'+opts+'</select><button class="btn dnav" data-act="daynext" aria-label="Další den"'+(di<DS.length-1?'':' disabled')+'>›</button></span>':'<span class="dayname">'+esc((d.label||"Natáčecí den")+" – "+(d.date?fmtDate(d.date):""))+'</span>')+
+  var tools=(canEdit||standalone||DS.length>1?'<span class="daynav"><button class="btn dnav" data-act="dayprev" aria-label="Předchozí den"'+(di>0?'':' disabled')+'>‹</button><select id="daySel" aria-label="Natáčecí den" style="min-width:calc('+DS.reduce(function(m,x){return Math.max(m,shortDay(x).length);},0)+'ch + 44px)">'+opts+'</select><button class="btn dnav" data-act="daynext" aria-label="Další den"'+(di<DS.length-1?'':' disabled')+'>›</button></span>':'<span class="dayname">'+esc((d.label||"Natáčecí den")+" – "+(d.date?fmtDate(d.date):""))+'</span>')+
     (d.planVer||(S.plan&&S.plan.version)?'<span class="planver" title="Verze natáčecího plánu">Plán: '+esc(d.planVer||S.plan.version)+'</span>':'')+
     (standalone?'<span class="offline">Offline kopie</span>':'')+(canEdit?'<span class="planwrap"><button class="btn planbtn'+(ui.planMenu?' open':'')+'" data-act="planmenu" aria-expanded="'+(ui.planMenu?'true':'false')+'">Plán <span class="car">▾</span></button>'+
       (ui.planMenu?'<span class="planveil" data-act="planclose"></span><span class="planmenu" role="menu"><button data-act="chrono" role="menuitem">Chronologie</button><button data-act="shotlist" role="menuitem">Natočené obrazy</button><button data-act="editday" role="menuitem">Upravit den</button><button data-act="newday" role="menuitem">+ Nový den</button><button data-act="planupdopen" role="menuitem">Aktualizovat podle nové verze<small>vložit aktuální plán (PDF)</small></button></span>':'')+'</span>'+
