@@ -681,7 +681,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 14:50";
+var APP_BUILD="17. 11. 15:10";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -2463,28 +2463,42 @@ function sharpQueue(){clearTimeout(SHARP.t);SHARP.t=setTimeout(sharpRun,220);}
 function sharpRun(){
   var vv=window.visualViewport,box=document.getElementById("pdfPages"),doc=ANN&&ANN.pdf;
   if(!box||!doc)return;
-  if(!vv||vv.scale<1.15){sharpClear();return;}
-  var gen=++SHARP.gen, dpr=window.devicePixelRatio||1, k=dpr*vv.scale, br=box.getBoundingClientRect();
-  var X0=Math.max(vv.offsetLeft,br.left),Y0=Math.max(vv.offsetTop,br.top),X1=Math.min(vv.offsetLeft+vv.width,br.right),Y1=Math.min(vv.offsetTop+vv.height,br.bottom);
-  var seen={};
+  var sc=vv?vv.scale:1;
+  if(sc<1.15){sharpClear();return;}
+  var gen=++SHARP.gen, dpr=window.devicePixelRatio||1, k=dpr*sc, br=box.getBoundingClientRect(), MAXA=1e7;
+  /* visible area: Safari and Chrome differ in whether client rects are relative to the layout or the visual viewport – take both */
+  var A=[[Math.max(vv.offsetLeft,br.left),Math.max(vv.offsetTop,br.top),Math.min(vv.offsetLeft+vv.width,br.right),Math.min(vv.offsetTop+vv.height,br.bottom)],
+         [Math.max(0,br.left),Math.max(0,br.top),Math.min(vv.width,br.right),Math.min(vv.height,br.bottom)]];
+  var cy=(A[0][1]+A[0][3])/2, cand=[];
   [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(wrap){
     var base=wrap.querySelector("canvas:not(.ann):not(.hi)");if(!base)return;
-    var r=wrap.getBoundingClientRect(),ix=Math.max(X0,r.left),iy=Math.max(Y0,r.top),ix1=Math.min(X1,r.right),iy1=Math.min(Y1,r.bottom);
-    if(ix1-ix<4||iy1-iy<4)return;
-    var rx=Math.floor(ix-r.left),ry=Math.floor(iy-r.top),rw=Math.ceil(ix1-ix)+1,rh=Math.ceil(iy1-iy)+1;
-    var kk=Math.min(k,Math.sqrt(9e6/(rw*rh)));
-    var pg=+wrap.getAttribute("data-page");seen[pg]=1;
+    var r=wrap.getBoundingClientRect(),hit=null;
+    A.forEach(function(a){var ix=Math.max(a[0],r.left),iy=Math.max(a[1],r.top),ix1=Math.min(a[2],r.right),iy1=Math.min(a[3],r.bottom);
+      if(ix1-ix>=4&&iy1-iy>=4){hit=hit?[Math.min(hit[0],ix),Math.min(hit[1],iy),Math.max(hit[2],ix1),Math.max(hit[3],iy1)]:[ix,iy,ix1,iy1];}});
+    if(hit)cand.push({wrap:wrap,r:r,hit:hit,d:Math.abs((r.top+r.bottom)/2-cy)});});
+  cand.sort(function(a,b){return a.d-b.d;}); cand=cand.slice(0,2);
+  var keep=cand.map(function(c){return c.wrap;});
+  [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(w){if(keep.indexOf(w)<0)[].slice.call(w.querySelectorAll("canvas.hi")).forEach(function(o){o.remove();});});
+  if(/[#&]dbg/.test(location.hash))toast("zoom "+sc.toFixed(2)+" dpr "+dpr+" off "+Math.round(vv.offsetLeft)+","+Math.round(vv.offsetTop)+" stran "+cand.length);
+  cand.forEach(function(c){
+    var wrap=c.wrap,r=c.r,W=r.width,H=r.height,rx,ry,rw,rh,kk;
+    var kw=Math.min(k,Math.sqrt(MAXA/(W*H)));
+    if(kw>=k*0.7){rx=0;ry=0;rw=W;rh=H;kk=kw;}
+    else{rx=Math.max(0,Math.floor(c.hit[0]-r.left));ry=Math.max(0,Math.floor(c.hit[1]-r.top));rw=Math.min(W-rx,Math.ceil(c.hit[2]-c.hit[0])+1);rh=Math.min(H-ry,Math.ceil(c.hit[3]-c.hit[1])+1);kk=Math.min(k,Math.sqrt(MAXA/(rw*rh)));}
+    if(rw<4||rh<4)return;
+    var old=wrap.querySelector("canvas.hi");if(old&&old.getAttribute("data-k")===String(Math.round(kk*100))&&old.getAttribute("data-r")===[rx,ry,Math.round(rw),Math.round(rh)].join(","))return;
+    var pg=+wrap.getAttribute("data-page");
     doc.getPage(pg).then(function(page){if(gen!==SHARP.gen)return;
-      var v1=page.getViewport({scale:1}),v=page.getViewport({scale:r.width/v1.width*kk});
-      var c=document.createElement("canvas");c.className="hi";c.width=Math.round(rw*kk);c.height=Math.round(rh*kk);
-      c.style.cssText="position:absolute;left:"+rx+"px;top:"+ry+"px;width:"+rw+"px;height:"+rh+"px;box-shadow:none;border-radius:0;pointer-events:none";
-      return page.render({canvasContext:c.getContext("2d"),viewport:v,transform:[1,0,0,1,-rx*kk,-ry*kk]}).promise.then(function(){
-        if(gen!==SHARP.gen||!wrap.isConnected)return;
-        [].slice.call(wrap.querySelectorAll("canvas.hi")).forEach(function(o){o.remove();});
-        var ov=wrap.querySelector("canvas.ann");wrap.insertBefore(c,ov||null);});
-    }).catch(function(){});
+      var v1=page.getViewport({scale:1}),v=page.getViewport({scale:W/v1.width*kk});
+      var cv=document.createElement("canvas");cv.className="hi";cv.width=Math.round(rw*kk);cv.height=Math.round(rh*kk);
+      cv.setAttribute("data-k",String(Math.round(kk*100)));cv.setAttribute("data-r",[rx,ry,Math.round(rw),Math.round(rh)].join(","));
+      cv.style.cssText="position:absolute;left:"+rx+"px;top:"+ry+"px;width:"+rw+"px;height:"+rh+"px;box-shadow:none;border-radius:0;pointer-events:none;max-width:none";
+      return page.render({canvasContext:cv.getContext("2d"),viewport:v,transform:[1,0,0,1,-rx*kk,-ry*kk]}).promise.then(function(){
+        if(gen!==SHARP.gen||!wrap.isConnected){cv.width=cv.height=0;return;}
+        [].slice.call(wrap.querySelectorAll("canvas.hi")).forEach(function(o){o.width=o.height=0;o.remove();});
+        var ov=wrap.querySelector("canvas.ann");wrap.insertBefore(cv,ov||null);});
+    }).catch(function(e){if(/[#&]dbg/.test(location.hash))toast("chyba ostření: "+(e&&e.message||e));});
   });
-  [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(w){if(!seen[+w.getAttribute("data-page")])[].slice.call(w.querySelectorAll("canvas.hi")).forEach(function(o){o.remove();});});
 }
 if(window.visualViewport){visualViewport.addEventListener("resize",function(){if(document.getElementById("pdfPages"))sharpQueue();});visualViewport.addEventListener("scroll",function(){if(document.getElementById("pdfPages"))sharpQueue();});}
 document.addEventListener("scroll",function(e){if(e.target&&e.target.id==="pdfPages"&&window.visualViewport&&visualViewport.scale>=1.15)sharpQueue();},true);
