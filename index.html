@@ -678,7 +678,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 13:45";
+var APP_BUILD="17. 11. 13:55";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1576,7 +1576,7 @@ function mnDb(){if(mnDbP)return mnDbP;mnDbP=new Promise(function(ok,no){try{var 
 function mnGet(id){return mnDb().then(function(db){return new Promise(function(ok){var t=db.transaction("n").objectStore("n").get(id);t.onsuccess=function(){ok(t.result||null);};t.onerror=function(){ok(null);};});}).catch(function(){return null;});}
 function mnPut(id,v){return mnDb().then(function(db){return new Promise(function(ok){var tx=db.transaction("n","readwrite"),st=tx.objectStore("n");if(v)st.put(v,id);else st.delete(id);tx.oncomplete=function(){ok(true);};tx.onerror=function(){ok(false);};});}).catch(function(){return false;});}
 function mnKeys(){return mnDb().then(function(db){return new Promise(function(ok){var t=db.transaction("n").objectStore("n").getAllKeys();t.onsuccess=function(){ok(t.result||[]);};t.onerror=function(){ok([]);};});}).catch(function(){return [];});}
-function mnInit(){if(!canEdit||typeof indexedDB==="undefined")return;mnKeys().then(function(k){MYN={};k.forEach(function(x){MYN[x]=1;});if(k.length)render();});}
+function mnInit(){if(typeof indexedDB==="undefined")return;mnKeys().then(function(k){MYN={};k.forEach(function(x){MYN[x]=1;});if(k.length)render();});}
 function rowObr(r){return r.scene&&typeof obrByScene==="function"&&Array.isArray(S.obrazy)?obrByScene(r.scene):null;}
 function rowDesc(r){if(r.desc)return r.desc;var o=rowObr(r);return o&&o.desc||"";}
 function rowLoc(r){if(r.loc)return r.loc;var o=rowObr(r);return o&&o.loc||"";}
@@ -1584,7 +1584,7 @@ function dejHTML(r,cls){var d=rowDesc(r);if(!d)return "";var o=ui.dejOpen&&ui.de
 var PIN='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11.2a6.5 6.5 0 0 1 13 0C18.5 14.8 12 21 12 21z"/><circle cx="12" cy="9.8" r="2.4"/></svg>';
 function pinBtn(r){var l=rowLoc(r);if(!l&&!canEdit)return "";return '<button class="bkbtn pin'+(l?' has':' none')+'" data-act="loc" data-id="'+r.id+'" aria-label="Lokace"'+(l?' title="'+esc(l)+'"':' disabled')+'>'+PIN+'</button>';}
 function locHTML(r,cls){var l=rowLoc(r);return l?'<span class="'+cls+'" title="'+esc(l)+'">'+esc(l)+'</span>':'';}
-function myNoteBtn(r){if(!canEdit)return "";return '<button class="bkbtn mynote'+(MYN[r.id]?' has':'')+'" data-act="mynote" data-id="'+r.id+'" aria-label="Moje poznámka" title="Moje poznámka">'+PENCIL+(MYN[r.id]?'<i></i>':'')+'</button>';}
+function myNoteBtn(r){if(typeof indexedDB==="undefined")return "";return '<button class="bkbtn mynote'+(MYN[r.id]?' has':'')+'" data-act="mynote" data-id="'+r.id+'" aria-label="Moje poznámka" title="Moje poznámka">'+PENCIL+(MYN[r.id]?'<i></i>':'')+'</button>';}
 function mnEmpty(n){return !n||(!n.strokes.length&&!(n.photos||[]).length&&!(n.items||[]).length);}
 var MN_IMG={};
 function mnImgEl(d){if(MN_IMG[d])return MN_IMG[d];var im=new Image();im.onload=function(){mnDraw();try{annRedrawAll();}catch(_){}};im.src=d;MN_IMG[d]=im;return im;}
@@ -2973,7 +2973,7 @@ document.addEventListener("click",function(e){
   var el=e.target.closest("[data-act]"); if(!el)return;
   var a=el.getAttribute("data-act");
   if(a==="veil"&&e.target!==el)return;
-  if(!canEdit&&["close","veil","refresh","track","toggledone","dej","loc","themesheet","theme","pushon","pushoff","forgot","setnewpass","book","lupa","login","dologin"].indexOf(a)<0)return;
+  if(!canEdit&&["close","veil","refresh","track","toggledone","dej","loc","themesheet","theme","pushon","pushoff","forgot","setnewpass","book","lupa","mynote","login","dologin"].indexOf(a)<0)return;
   act(a,el.getAttribute("data-id"),el);
 });
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="fFileName"){e.preventDefault();act("dosave");}if(e.key==="Enter"&&(e.target.id==="fPass"||e.target.id==="fEmail")){e.preventDefault();act("dologin");}});
@@ -3191,8 +3191,8 @@ function webConnect(){
   try{SB.auth.onAuthStateChange(function(ev){if(ev==="PASSWORD_RECOVERY"||(isRecovery&&ev==="SIGNED_IN")){isRecovery=false;setTimeout(function(){ui.sheet={kind:"newpass"};render();},300);}});}catch(_){}
   cacheLoad(); render();
   SB.auth.getSession().then(function(r){var u=r.data&&r.data.session&&r.data.session.user;
-    return checkEditor(u).then(function(ok){if(ok)becomeEditor(u);else{liveRow=PID_PUB;webSubscribe();if(/[?&]login\b/.test(location.search))act("login");}});
-  },function(){webSubscribe();});
+    return checkEditor(u).then(function(ok){if(ok)becomeEditor(u);else{liveRow=PID_PUB;webSubscribe();mnInit();if(/[?&]login\b/.test(location.search))act("login");}});
+  },function(){webSubscribe();mnInit();});
   document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"&&SB)webFetch();});
   window.addEventListener("online",function(){if(SB)webSubscribe();});
 }
