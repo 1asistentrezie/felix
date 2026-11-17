@@ -681,7 +681,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 15:10";
+var APP_BUILD="17. 11. 15:25";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -2457,47 +2457,56 @@ function asInit(){AS.lvl=asLvl();AS.on=false;asUI();
   document.getElementById("asTop").onclick=function(){var box=document.getElementById("pdfPages");if(!box)return;var w=box.querySelector('[data-page="'+PDF_FROM+'"]');box.scrollTop=w?w.offsetTop-box.offsetTop-8:0;};document.getElementById("asUp").onclick=function(){asSet(AS.lvl+1);};
   document.getElementById("asSp").oninput=function(){asSet(+this.value);};}
 /* ---------- ostré zvětšení: po přiblížení prstama se viditelná část stránky překreslí v plném rozlišení ---------- */
-var SHARP={gen:0,t:null};
-function sharpClear(){[].slice.call(document.querySelectorAll("#pdfPages canvas.hi")).forEach(function(c){c.remove();});}
-function sharpQueue(){clearTimeout(SHARP.t);SHARP.t=setTimeout(sharpRun,220);}
+var SHARP={gen:0,t:null,max:1e7};
+function sharpFree(c){try{c.width=c.height=0;}catch(_){}c.remove();}
+function sharpClear(){[].slice.call(document.querySelectorAll("#pdfPages canvas.hi")).forEach(sharpFree);}
+function sharpQueue(){clearTimeout(SHARP.t);SHARP.t=setTimeout(sharpRun,250);}
 function sharpRun(){
-  var vv=window.visualViewport,box=document.getElementById("pdfPages"),doc=ANN&&ANN.pdf;
-  if(!box||!doc)return;
-  var sc=vv?vv.scale:1;
+  var vv=window.visualViewport,box=document.getElementById("pdfPages"),doc=ANN&&ANN.pdf,pn=document.getElementById("pdfPanel");
+  if(!box||!doc||!vv)return;
+  var sc=vv.scale;
   if(sc<1.15){sharpClear();return;}
-  var gen=++SHARP.gen, dpr=window.devicePixelRatio||1, k=dpr*sc, br=box.getBoundingClientRect(), MAXA=1e7;
-  /* visible area: Safari and Chrome differ in whether client rects are relative to the layout or the visual viewport – take both */
-  var A=[[Math.max(vv.offsetLeft,br.left),Math.max(vv.offsetTop,br.top),Math.min(vv.offsetLeft+vv.width,br.right),Math.min(vv.offsetTop+vv.height,br.bottom)],
-         [Math.max(0,br.left),Math.max(0,br.top),Math.min(vv.width,br.right),Math.min(vv.height,br.bottom)]];
-  var cy=(A[0][1]+A[0][3])/2, cand=[];
+  var gen=++SHARP.gen, dpr=window.devicePixelRatio||1, k=dpr*sc, br=box.getBoundingClientRect();
+  /* are client rects relative to the visual viewport (iOS Safari) or the layout viewport? the fixed panel sits at top 0 of the layout viewport */
+  var pt=pn?pn.getBoundingClientRect().top:0, visRel=(Math.abs(vv.offsetTop)>4&&Math.abs(pt+vv.offsetTop)<3)||(Math.abs(vv.offsetLeft)>4&&pn&&Math.abs(pn.getBoundingClientRect().left+vv.offsetLeft)<3);
+  var ox=visRel?0:vv.offsetLeft, oy=visRel?0:vv.offsetTop;
+  var A=[Math.max(ox,br.left),Math.max(oy,br.top),Math.min(ox+vv.width,br.right),Math.min(oy+vv.height,br.bottom)];
+  var cand=[];
   [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(wrap){
     var base=wrap.querySelector("canvas:not(.ann):not(.hi)");if(!base)return;
-    var r=wrap.getBoundingClientRect(),hit=null;
-    A.forEach(function(a){var ix=Math.max(a[0],r.left),iy=Math.max(a[1],r.top),ix1=Math.min(a[2],r.right),iy1=Math.min(a[3],r.bottom);
-      if(ix1-ix>=4&&iy1-iy>=4){hit=hit?[Math.min(hit[0],ix),Math.min(hit[1],iy),Math.max(hit[2],ix1),Math.max(hit[3],iy1)]:[ix,iy,ix1,iy1];}});
-    if(hit)cand.push({wrap:wrap,r:r,hit:hit,d:Math.abs((r.top+r.bottom)/2-cy)});});
-  cand.sort(function(a,b){return a.d-b.d;}); cand=cand.slice(0,2);
+    var r=wrap.getBoundingClientRect(),ix=Math.max(A[0],r.left),iy=Math.max(A[1],r.top),ix1=Math.min(A[2],r.right),iy1=Math.min(A[3],r.bottom);
+    if(ix1-ix>=4&&iy1-iy>=4)cand.push({wrap:wrap,r:r,hit:[ix,iy,ix1,iy1],a:(ix1-ix)*(iy1-iy)});});
+  cand.sort(function(a,b){return b.a-a.a;}); cand=cand.slice(0,2);
   var keep=cand.map(function(c){return c.wrap;});
-  [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(w){if(keep.indexOf(w)<0)[].slice.call(w.querySelectorAll("canvas.hi")).forEach(function(o){o.remove();});});
-  if(/[#&]dbg/.test(location.hash))toast("zoom "+sc.toFixed(2)+" dpr "+dpr+" off "+Math.round(vv.offsetLeft)+","+Math.round(vv.offsetTop)+" stran "+cand.length);
+  [].slice.call(box.querySelectorAll(".pgwrap")).forEach(function(w){if(keep.indexOf(w)<0)[].slice.call(w.querySelectorAll("canvas.hi")).forEach(sharpFree);});
+  var budget=SHARP.max/Math.max(1,cand.length);
+  if(/[#&]dbg/.test(location.hash))toast("zoom "+sc.toFixed(2)+" dpr "+dpr+(visRel?" vis":" lay")+" off "+Math.round(vv.offsetLeft)+","+Math.round(vv.offsetTop)+" stran "+cand.length+" max "+Math.round(SHARP.max/1e5)/10+"M");
   cand.forEach(function(c){
-    var wrap=c.wrap,r=c.r,W=r.width,H=r.height,rx,ry,rw,rh,kk;
-    var kw=Math.min(k,Math.sqrt(MAXA/(W*H)));
-    if(kw>=k*0.7){rx=0;ry=0;rw=W;rh=H;kk=kw;}
-    else{rx=Math.max(0,Math.floor(c.hit[0]-r.left));ry=Math.max(0,Math.floor(c.hit[1]-r.top));rw=Math.min(W-rx,Math.ceil(c.hit[2]-c.hit[0])+1);rh=Math.min(H-ry,Math.ceil(c.hit[3]-c.hit[1])+1);kk=Math.min(k,Math.sqrt(MAXA/(rw*rh)));}
+    var wrap=c.wrap,r=c.r,W=r.width,H=r.height,rx,ry,rw,rh,kk,whole=false;
+    var kw=Math.min(k,Math.sqrt(budget/(W*H)));
+    if(kw>=k*0.7){rx=0;ry=0;rw=W;rh=H;kk=kw;whole=true;}
+    else{rx=Math.max(0,Math.floor(c.hit[0]-r.left));ry=Math.max(0,Math.floor(c.hit[1]-r.top));rw=Math.min(W-rx,Math.ceil(c.hit[2]-c.hit[0])+1);rh=Math.min(H-ry,Math.ceil(c.hit[3]-c.hit[1])+1);kk=Math.min(k,Math.sqrt(budget/(rw*rh)));}
     if(rw<4||rh<4)return;
-    var old=wrap.querySelector("canvas.hi");if(old&&old.getAttribute("data-k")===String(Math.round(kk*100))&&old.getAttribute("data-r")===[rx,ry,Math.round(rw),Math.round(rh)].join(","))return;
+    /* already sharp enough? keep it, no new allocation */
+    var old=wrap.querySelector("canvas.hi");
+    if(old){var ok=+old.getAttribute("data-k")/100, ow=old.getAttribute("data-whole")==="1", og=(old.getAttribute("data-r")||"").split(",").map(Number);
+      var covers=ow||(og[0]<=rx+1&&og[1]<=ry+1&&og[0]+og[2]>=rx+rw-1&&og[1]+og[3]>=ry+rh-1);
+      if(covers&&ok>=kk*0.9&&Math.abs((+old.getAttribute("data-w"))-W)<1)return;}
     var pg=+wrap.getAttribute("data-page");
     doc.getPage(pg).then(function(page){if(gen!==SHARP.gen)return;
       var v1=page.getViewport({scale:1}),v=page.getViewport({scale:W/v1.width*kk});
       var cv=document.createElement("canvas");cv.className="hi";cv.width=Math.round(rw*kk);cv.height=Math.round(rh*kk);
-      cv.setAttribute("data-k",String(Math.round(kk*100)));cv.setAttribute("data-r",[rx,ry,Math.round(rw),Math.round(rh)].join(","));
+      var ctx=cv.getContext("2d");if(!ctx){SHARP.max*=0.6;sharpFree(cv);return;}
+      cv.setAttribute("data-k",String(Math.round(kk*100)));cv.setAttribute("data-r",[rx,ry,Math.round(rw),Math.round(rh)].join(","));cv.setAttribute("data-whole",whole?"1":"0");cv.setAttribute("data-w",String(W));
       cv.style.cssText="position:absolute;left:"+rx+"px;top:"+ry+"px;width:"+rw+"px;height:"+rh+"px;box-shadow:none;border-radius:0;pointer-events:none;max-width:none";
-      return page.render({canvasContext:cv.getContext("2d"),viewport:v,transform:[1,0,0,1,-rx*kk,-ry*kk]}).promise.then(function(){
-        if(gen!==SHARP.gen||!wrap.isConnected){cv.width=cv.height=0;return;}
-        [].slice.call(wrap.querySelectorAll("canvas.hi")).forEach(function(o){o.width=o.height=0;o.remove();});
+      return page.render({canvasContext:ctx,viewport:v,transform:[1,0,0,1,-rx*kk,-ry*kk]}).promise.then(function(){
+        if(gen!==SHARP.gen||!wrap.isConnected){sharpFree(cv);return;}
+        /* Safari over its canvas-memory limit hands out a dead canvas that stays transparent – then keep what we have and go smaller next time */
+        var px=null;try{px=ctx.getImageData(Math.floor(cv.width/2),Math.floor(cv.height/2),1,1).data;}catch(_){}
+        if(!px||px[3]===0){sharpFree(cv);SHARP.max=Math.max(2e6,SHARP.max*0.6);if(/[#&]dbg/.test(location.hash))toast("málo paměti – snižuji na "+Math.round(SHARP.max/1e5)/10+"M");sharpQueue();return;}
+        [].slice.call(wrap.querySelectorAll("canvas.hi")).forEach(sharpFree);
         var ov=wrap.querySelector("canvas.ann");wrap.insertBefore(cv,ov||null);});
-    }).catch(function(e){if(/[#&]dbg/.test(location.hash))toast("chyba ostření: "+(e&&e.message||e));});
+    }).catch(function(e){sharpFree&&0;if(/[#&]dbg/.test(location.hash))toast("chyba ostření: "+(e&&e.message||e));});
   });
 }
 if(window.visualViewport){visualViewport.addEventListener("resize",function(){if(document.getElementById("pdfPages"))sharpQueue();});visualViewport.addEventListener("scroll",function(){if(document.getElementById("pdfPages"))sharpQueue();});}
