@@ -682,7 +682,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 14:10";
+var APP_BUILD="17. 11. 14:20";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1018,11 +1018,11 @@ function viewerDay(){var t=todayISO(),ds=S.days.filter(function(x){return x.date
   return ds.filter(function(x){return x.date===t;})[0]||ds.filter(function(x){return x.date>t;})[0]||ds[ds.length-1]||S.days[0];}
 function render(){
   try{document.body.classList.toggle("ed",!!canEdit);}catch(_){}
-  if(!canEdit&&!standalone){var vd=viewerDay(); if(vd)ui.dayId=vd.id;}
+  if(!canEdit&&!standalone&&!ui.dayPicked){var vd=viewerDay(); if(vd)ui.dayId=vd.id;}
   var d=day(); ui.dayId=d.id;
   var DS=daysSorted();var opts=DS.map(function(x){return '<option value="'+x.id+'"'+(x.id===d.id?' selected':'')+'>'+esc(shortDay(x))+'</option>';}).join("");
   var di=DS.indexOf(d);
-  var tools=(canEdit||standalone?'<span class="daynav"><button class="btn dnav" data-act="dayprev" aria-label="Předchozí den"'+(di>0?'':' disabled')+'>‹</button><select id="daySel" aria-label="Natáčecí den">'+opts+'</select><button class="btn dnav" data-act="daynext" aria-label="Další den"'+(di<DS.length-1?'':' disabled')+'>›</button></span>':'<span class="dayname">'+esc((d.label||"Natáčecí den")+" – "+(d.date?fmtDate(d.date):""))+'</span>')+
+  var tools=(canEdit||standalone||DS.length>1?'<span class="daynav"><button class="btn dnav" data-act="dayprev" aria-label="Předchozí den"'+(di>0?'':' disabled')+'>‹</button><select id="daySel" aria-label="Natáčecí den">'+opts+'</select><button class="btn dnav" data-act="daynext" aria-label="Další den"'+(di<DS.length-1?'':' disabled')+'>›</button></span>':'<span class="dayname">'+esc((d.label||"Natáčecí den")+" – "+(d.date?fmtDate(d.date):""))+'</span>')+
     (d.planVer||(S.plan&&S.plan.version)?'<span class="planver" title="Verze natáčecího plánu">Plán: '+esc(d.planVer||S.plan.version)+'</span>':'')+
     (standalone?'<span class="offline">Offline kopie</span>':'')+(canEdit?'<span class="planwrap"><button class="btn planbtn'+(ui.planMenu?' open':'')+'" data-act="planmenu" aria-expanded="'+(ui.planMenu?'true':'false')+'">Plán <span class="car">▾</span></button>'+
       (ui.planMenu?'<span class="planveil" data-act="planclose"></span><span class="planmenu" role="menu"><button data-act="chrono" role="menuitem">Chronologie</button><button data-act="shotlist" role="menuitem">Natočené obrazy</button><button data-act="editday" role="menuitem">Upravit den</button><button data-act="newday" role="menuitem">+ Nový den</button><button data-act="planupdopen" role="menuitem">Aktualizovat podle nové verze<small>vložit aktuální plán (PDF)</small></button></span>':'')+'</span>'+
@@ -2978,7 +2978,7 @@ document.addEventListener("click",function(e){
   var el=e.target.closest("[data-act]"); if(!el)return;
   var a=el.getAttribute("data-act");
   if(a==="veil"&&e.target!==el)return;
-  if(!canEdit&&["close","veil","refresh","track","toggledone","dej","loc","themesheet","theme","pushon","pushoff","forgot","setnewpass","book","lupa","mynote","login","dologin"].indexOf(a)<0)return;
+  if(!canEdit&&["close","veil","refresh","track","toggledone","dej","loc","themesheet","theme","pushon","pushoff","forgot","setnewpass","book","lupa","mynote","dayprev","daynext","login","dologin"].indexOf(a)<0)return;
   act(a,el.getAttribute("data-id"),el);
 });
 document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.id==="fFileName"){e.preventDefault();act("dosave");}if(e.key==="Enter"&&(e.target.id==="fPass"||e.target.id==="fEmail")){e.preventDefault();act("dologin");}});
@@ -3130,7 +3130,7 @@ function goStandalone(){
 function stripDocs(o){o.scripts=[];o.slozky=[];(o.days||[]).forEach(function(d){(d.rows||[]).forEach(function(r){delete r.pages;delete r.pagesAuto;delete r.slozka;delete r.slozkaAuto;});});(o.obrazy||[]).forEach(function(x){delete x.sid;});}
 function publicState(){
   var t=todayISO(), y=new Date(); y.setDate(y.getDate()-1); var yi=y.getFullYear()+"-"+pad(y.getMonth()+1)+"-"+pad(y.getDate());
-  var ds=S.days.filter(function(d){return d.date&&d.date>=yi;}).sort(function(a,b){return a.date<b.date?-1:1;}).slice(0,3);
+  var ds=S.days.filter(function(d){return d.date&&d.date>=yi;}).sort(function(a,b){return a.date<b.date?-1:1;});
   if(!ds.length){var all=S.days.filter(function(d){return d.date;}).sort(function(a,b){return a.date<b.date?-1:1;});ds=all.slice(-1);}
   if(!ds.length)ds=S.days.slice(0,1);
   ds=ds.map(function(d){var c=JSON.parse(JSON.stringify(d));c.rows.forEach(function(r){if(r.type!=="shot")return;var de=rowDesc(r),lo=rowLoc(r);if(de)r.desc=de;if(lo)r.loc=lo;});return c;});
