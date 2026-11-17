@@ -125,6 +125,7 @@ body.ed::before{background:#000}
 .s-zoom{flex:0 0 auto;display:flex;align-items:center;gap:0;border:1px solid rgba(255,255,255,.22);border-radius:8px;overflow:hidden;margin-inline:2px 6px}
 .s-zoom button{background:transparent;color:#fff;border:0;font:inherit;font-weight:800;font-size:22px;line-height:1;min-width:38px;height:40px;padding:0 6px;cursor:pointer}
 .s-zoom button.zv{font-size:12px;letter-spacing:.04em;min-width:46px;color:rgba(255,255,255,.75);border-inline:1px solid rgba(255,255,255,.22)}
+.s-zoom.ph{display:none}
 .s-zoom button:disabled{opacity:.3;cursor:default}.s-zoom button:active{background:rgba(255,255,255,.12)}
 .menubtn{min-height:48px;min-width:48px;border:1px solid var(--line);border-radius:8px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 10px;
   font-family:var(--f-display);font-weight:600;font-size:12px;letter-spacing:.12em;color:var(--muted)}
@@ -385,6 +386,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
   /* phone header: two rows — projekt · datum · čas / lokace · směna · stopky */
   .bar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;grid-template-areas:"proj date clock" "loc shift watch";gap:4px 10px;padding-block:6px;align-items:center}
   .s-menu,.s-sun,.s-zoom{display:none}
+  .bar .s-zoom.ph{display:flex;flex-direction:column;margin:0;border-radius:6px}.bar .s-zoom.ph button{min-width:30px;width:30px;height:21px;font-size:17px;padding:0}.bar .s-zoom.ph button+button{border-top:1px solid rgba(255,255,255,.22)}.bar .s-zoom.ph button.zv{display:none}.bar .s-zoom.ph button.zv+button{border-top:0}
   .s-proj{grid-area:proj}.s-date{grid-area:date}.s-clock{grid-area:clock}
   .s-loc{grid-area:loc}.s-shift{grid-area:shift}.s-watch{grid-area:watch;justify-content:flex-end}
   .bar .s-watch.is-open{grid-area:watch;width:auto;justify-self:end}
@@ -638,6 +640,7 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 .sharebtn.shbig{width:auto;height:48px;padding:0 14px;display:inline-flex;gap:8px;align-items:center;border:3px solid #F2A54A;border-radius:10px;font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.04em;color:var(--ink)}
 .sharebtn.shbig svg{width:24px;height:24px}
 @media (max-width:759px){.sharebtn.shbig{height:42px;padding:0 10px;font-size:16px}.sharebtn.shbig svg{width:21px;height:21px}}
+@media (max-width:479px){.sharebtn.shbig span{display:none}.sharebtn.shbig{padding:0 9px}}
 
 /* scénář: vyšší řádek anotací, řádky se nesmršťují */
 #pdfPanel>*{flex-shrink:0}#pdfPanel #pdfPages{flex-shrink:1}
@@ -711,7 +714,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 20:15";
+var APP_BUILD="17. 11. 20:45";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -851,9 +854,9 @@ function leftTxt(d){
 /* ---------- velikost zobrazení (zoom + / −), pamatuje se v tomto prohlížeči ---------- */
 var ZOOMS=[.6,.7,.8,.9,1,1.1,1.2,1.3,1.4,1.5,1.6];
 function zoomGet(){var z=+(LS.getItem("nd.zoom")||1);return z>=.5&&z<=2?z:1;}
-function zoomApply(){var a=document.getElementById("app"),z=zoomGet();if(!a)return;a.style.zoom=z===1?"":String(z);a.style.setProperty("--unzoom",z===1?"1":String(1/z));}
+function zoomApply(){var a=document.getElementById("app"),z=zoomGet();if(!a)return;a.style.zoom=z===1?"":String(z);a.style.maxWidth=z===1?"":(1180/z)+"px";a.style.setProperty("--unzoom",z===1?"1":String(1/z));}
 function zoomStep(dir){var z=zoomGet(),i=0,b=1e9;ZOOMS.forEach(function(v,j){var dd=Math.abs(v-z);if(dd<b){b=dd;i=j;}});i=Math.max(0,Math.min(ZOOMS.length-1,i+dir));try{LS.setItem("nd.zoom",String(ZOOMS[i]));}catch(_){}zoomApply();render();}
-function zoomHTML(){var z=zoomGet();return '<div class="s-zoom" role="group" aria-label="Velikost zobrazení"><button data-act="zoomout" aria-label="Zmenšit"'+(z<=ZOOMS[0]?' disabled':'')+'>−</button><button class="zv" data-act="zoomreset" title="Původní velikost">'+Math.round(z*100)+' %</button><button data-act="zoomin" aria-label="Zvětšit"'+(z>=ZOOMS[ZOOMS.length-1]?' disabled':'')+'>+</button></div>';}
+function zoomHTML(ph){var z=zoomGet();return '<div class="s-zoom'+(ph?' ph':'')+'" role="group" aria-label="Velikost zobrazení"><button data-act="zoomout" aria-label="Zmenšit"'+(z<=ZOOMS[0]?' disabled':'')+'>−</button><button class="zv" data-act="zoomreset" title="Původní velikost">'+Math.round(z*100)+' %</button><button data-act="zoomin" aria-label="Zvětšit"'+(z>=ZOOMS[ZOOMS.length-1]?' disabled':'')+'>+</button></div>';}
 function headerHTML(d){
   var st=status(d), t=new Date(), sun=null, pl=sunPlace(d);
   if(d.date)sun=sunTimes(d.date,pl.lat,pl.lon);
@@ -865,7 +868,7 @@ function headerHTML(d){
     '<div class="slot s-loc'+(canEdit?' tap" data-act="shiftloc':'')+'"><span class="lab">Lokace</span><span class="loc">'+esc(d.location||"—")+'</span></div>'+
     '<div class="slot s-shift'+(canEdit?' tap" data-act="shiftloc':'')+'"><span class="lab">Směna</span><span class="big">'+(d.shiftFrom||d.shiftTo?esc(d.shiftFrom||"?")+'–'+esc(d.shiftTo||"?"):"—")+'</span></div>'+
     '<div class="slot s-sun" title="'+esc(pl.name)+'"><span class="lab" aria-label="Slunce">'+SUN+'</span><span class="sunl"><i>VÝCHOD</i><span>'+(sun?sun.rise:"—")+'</span><i>ZÁPAD</i><span>'+(sun?sun.set:"—")+'</span></span></div>'+
-    '<div class="s-watch">'+(canEdit?'<button class="sharebtn shbig" data-act="share" aria-label="Sdílet">'+SHARE+'<span>Sdílet</span></button>':'<button class="sharebtn thbtn" data-act="themesheet" aria-label="Nastavení" title="Nastavení (upozornění, barvy)">'+PALETTE+'</button>'+(!standalone?'<button class="sharebtn rfbtn" data-act="refresh" aria-label="Obnovit">'+REFRESH+'</button>':''))+'</div>'+
+    '<div class="s-watch">'+zoomHTML(1)+(canEdit?'<button class="sharebtn shbig" data-act="share" aria-label="Sdílet">'+SHARE+'<span>Sdílet</span></button>':'<button class="sharebtn thbtn" data-act="themesheet" aria-label="Nastavení" title="Nastavení (upozornění, barvy)">'+PALETTE+'</button>'+(!standalone?'<button class="sharebtn rfbtn" data-act="refresh" aria-label="Obnovit">'+REFRESH+'</button>':''))+'</div>'+
     '<div class="slot s-clock"><span class="lab">Aktuální čas</span><span class="big clock">'+pad(t.getHours())+':'+pad(t.getMinutes())+'<small>:'+pad(t.getSeconds())+'</small></span>'+liveMiniHTML()+'</div>';
 }
 var CLOCK='<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5.2l3.4 2"/></svg>';
