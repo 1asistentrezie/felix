@@ -100,6 +100,28 @@ body.ed::before{background:#000}
 .s-clock{flex:0 0 auto;align-items:flex-end;text-align:right}
 .s-menu{flex:0 0 auto;display:flex;align-items:center}
 #bar{zoom:var(--unzoom,1)}
+/* hlavička vždy v jednom řádku (tablet a širší) */
+@media (min-width:760px){
+  .bar{flex-wrap:nowrap;gap:10px 14px}
+  .bar>*{flex-shrink:0}
+  .s-proj{flex:0 1 auto;min-width:0;max-width:150px}.s-proj .big{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-wrap:nowrap}
+  .s-loc{flex:1 1 60px;min-width:44px}
+}
+@media (min-width:760px) and (max-width:1279px){
+  .bar{gap:8px 10px;padding-inline:max(10px,env(safe-area-inset-left,0px))}
+  .big{font-size:19px}.s-clock .big{font-size:30px}.s-clock .big small{font-size:19px}
+  .s-shift{padding:3px 8px}
+  .s-zoom{margin-inline:0 2px}.s-zoom button{min-width:30px;font-size:19px;height:36px;padding:0 4px}.s-zoom button.zv{min-width:38px;font-size:10px}
+  .sharebtn.shbig span{display:none}.sharebtn.shbig{padding:0 10px}
+  .menubtn{padding:6px 8px}
+}
+@media (min-width:760px) and (max-width:1149px){.bar.ed .s-zoom button.zv{display:none}.bar .s-proj.tap .big::after,.bar .s-loc.tap .loc::after,.bar .s-shift.tap .big::after,.bar .s-date.tap .big::after{content:none}.bar .loc{-webkit-line-clamp:3;font-size:13px}}
+@media (min-width:760px) and (max-width:1023px){
+  .s-sun{display:none}
+  .s-zoom button.zv{display:none}
+  .s-clock .big{font-size:26px}.s-clock .big small{font-size:16px}
+  .lab{font-size:10px;letter-spacing:.08em}
+}
 .s-zoom{flex:0 0 auto;display:flex;align-items:center;gap:0;border:1px solid rgba(255,255,255,.22);border-radius:8px;overflow:hidden;margin-inline:2px 6px}
 .s-zoom button{background:transparent;color:#fff;border:0;font:inherit;font-weight:800;font-size:22px;line-height:1;min-width:38px;height:40px;padding:0 6px;cursor:pointer}
 .s-zoom button.zv{font-size:12px;letter-spacing:.04em;min-width:46px;color:rgba(255,255,255,.75);border-inline:1px solid rgba(255,255,255,.22)}
@@ -118,7 +140,8 @@ body.ed::before{background:#000}
 .dayname{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:.03em}
 .offline{font-family:var(--f-display);font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:13px;color:var(--roll);border:1px solid var(--roll);border-radius:4px;padding:3px 8px}
 @media (min-width:1000px){
-  .bar{display:grid;grid-template-columns:auto minmax(0,.6fr) auto minmax(0,.6fr) auto auto auto auto;gap:10px 14px}
+  .bar{display:flex;flex-wrap:nowrap;gap:10px 14px}
+  .bar .s-proj{flex:0 1 auto;min-width:56px;max-width:180px}.bar .s-loc{flex:1 1 0;min-width:60px}
   .big{font-size:22px}
   .clock{font-size:34px}
   .clock small{font-size:21px}
@@ -688,7 +711,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 20:00";
+var APP_BUILD="17. 11. 20:15";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
