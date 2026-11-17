@@ -465,8 +465,8 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center;color:var(--in
 .row.note.commit.mt{grid-template-columns:30px minmax(0,1fr) auto 220px}
 .row.note.commit.mt .state{display:block}.row.note.commit.mt .stav{width:100%}
 @media (max-width:759px){.row.note.commit.mt{grid-template-columns:22px minmax(0,1fr) auto 100px}}
-.role.commit{border-color:var(--late);color:#FFD9D5;background:var(--late-bg)}
-.role.commit small{font-size:12px;font-weight:700;margin-left:4px;color:#FF8A80}
+.role.commit{border-color:#B3261E;color:#fff;background:#D93025}
+.role.commit small{font-size:12px;font-weight:800;margin-left:4px;color:#fff}
 .bkbtn,.bkbtn.none,.bkbtn.has{background:#F7F1E4;border-color:#D9CBAA;color:#7A4A1C;opacity:1}
 .bkbtn.lupa,.bkbtn.lupa.none,.bkbtn.lupa.has{background:#F7F1E4;border-color:#D9CBAA;color:#1F5FA8;opacity:1}
 .bkbtn.none,.bkbtn.lupa.none{background:var(--bg);border-color:var(--line);opacity:.55}
@@ -683,7 +683,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="17. 11. 19:30";
+var APP_BUILD="17. 11. 19:45";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1298,12 +1298,12 @@ function sheetHTML(){
     var dr=s.data, today=day().date||"";
     b='<h2>Herci</h2><span class="hint">Jména se nabídnou při vyplňování rolí v obrazech. Časové omezení zobrazí jméno v programu červeně s časem, do kdy herec může.</span>'+
       (dr.length?dr.map(function(c,i){
-        return '<div class="castrow"><div class="top">'+field("cN_"+i,"Role / jméno",c.name,"text",' placeholder="např. Felix"')+'<button class="btn danger sm" data-act="castdel" data-i="'+i+'" aria-label="Smazat roli">Smazat</button></div>'+
+        return '<div class="castrow"><div class="top">'+field("cN_"+i,"Role / jméno",c.name,"text",' placeholder="např. Felix"')+field("cA_"+i,"Herec",c.actor||"","text",' placeholder="např. Kramár"')+'<button class="btn danger sm" data-act="castdel" data-i="'+i+'" aria-label="Smazat roli">Smazat</button></div>'+
           '<div class="lims">'+(c.limits||[]).map(function(l,j){
             return '<div class="limrow">'+field("cLd_"+i+"_"+j,"Den",l.date,"date")+field("cLu_"+i+"_"+j,"Může jen do",l.until,"time")+'<button class="btn sm" data-act="limdel" data-i="'+i+'" data-j="'+j+'" aria-label="Odebrat omezení">✕</button></div>';
           }).join("")+'<button class="btn sm" data-act="limadd" data-i="'+i+'">+ Časové omezení</button></div></div>';
       }).join(""):'<div class="empty">Zatím žádní herci. Přidejte první roli.</div>')+
-      '<button class="btn" data-act="castadd">+ Přidat roli</button>'+
+      '<div class="grp"><button class="btn" data-act="castadd">+ Přidat roli</button><button class="btn" data-act="castfill">Načíst role z plánu</button></div><span class="hint">Když je u role vyplněný herec, závazek s jeho jménem (např. „Kramár na place do 13:00“) označí roli červeně ve všech obrazech toho dne.</span>'+
       '<div class="actions"><div class="grp"></div><div class="grp"><button class="btn" data-act="close">Zrušit</button><button class="btn primary" data-act="castsave">Uložit</button></div></div>';
     return '<div class="veil" data-act="veil"><div class="sheet" role="dialog" aria-modal="true">'+b+'</div></div>';
   }
@@ -1472,6 +1472,10 @@ function commitRoles(d,r){
   while((m=rx.exec(t))){var n=castRole("R"+m[1]+" - "+m[2].trim()); if(n&&!seen[fold(n)]){seen[fold(n)]=1;out.push(n);}}
   var ft=" "+fold(t).replace(/[^a-z0-9]+/g," ")+" ";
   dayActors(d).forEach(function(a){var b=fold(bareRole(a)).replace(/[^a-z0-9]+/g," ").trim(); if(b&&ft.indexOf(" "+b+" ")>=0&&!seen[fold(a)]){seen[fold(a)]=1;out.push(a);}});
+  /* jméno herce (Menu → Herci): stačí příjmení nebo celé jméno */
+  dayActors(d).forEach(function(a){if(seen[fold(a)])return;var c=castByName(a);if(!c||!c.actor)return;
+    var full=fold(c.actor).replace(/[^a-z0-9]+/g," ").trim(), parts=full.split(" ").filter(function(w){return w.length>=3;});
+    if((full&&ft.indexOf(" "+full+" ")>=0)||parts.some(function(w){return ft.indexOf(" "+w+" ")>=0;})){seen[fold(a)]=1;out.push(a);}});
   return out;
 }
 function commitFor(name,d){
@@ -2676,7 +2680,7 @@ document.addEventListener("change",function(e){if(e.target.id!=="fMotifPick"||!e
 function collectMotifs(){var dr=ui.sheet&&ui.sheet.kind==="motifs"?ui.sheet.data:null;if(!dr)return;dr.forEach(function(m,i){var n=document.getElementById("mN_"+i);if(n)m.name=n.value;});}
 function collectCast(){
   var dr=ui.sheet&&ui.sheet.kind==="cast"?ui.sheet.data:null; if(!dr)return;
-  dr.forEach(function(c,i){var n=document.getElementById("cN_"+i);if(n)c.name=n.value;
+  dr.forEach(function(c,i){var n=document.getElementById("cN_"+i);if(n)c.name=n.value;var an=document.getElementById("cA_"+i);if(an)c.actor=an.value;
     (c.limits||[]).forEach(function(l,j){var a=document.getElementById("cLd_"+i+"_"+j),u=document.getElementById("cLu_"+i+"_"+j);if(a)l.date=a.value;if(u)l.until=u.value;});});
 }
 
@@ -2995,13 +2999,16 @@ function act(a,id,el){
       S.motifs=nl; ui.sheet=null; changed(); toast(nRen?"Motivy uloženy · změněno v "+nRen+" "+(nRen===1?"obraze":"obrazech"):"Motivy uloženy"); break;}
     case "cast": ui.sheet={kind:"cast",data:JSON.parse(JSON.stringify(castSorted()))}; render(); break;
     case "castadd": collectCast(); ui.sheet.data.push({id:uid(),name:"",limits:[]}); render(); var ni=document.getElementById("cN_"+(ui.sheet.data.length-1)); if(ni)ni.focus(); break;
+    case "castfill": collectCast(); var have={}; ui.sheet.data.forEach(function(c){have[fold(c.name.trim())]=1;}); var nadd=0;
+      S.days.forEach(function(dd){dayActors(dd).forEach(function(n){if(!have[fold(n)]){have[fold(n)]=1;ui.sheet.data.push({id:uid(),name:n,actor:"",limits:[]});nadd++;}});});
+      ui.sheet.data.sort(function(a,b){return roleNum(a.name)-roleNum(b.name);}); render(); toast(nadd?"Přidáno rolí: "+nadd:"Všechny role z plánu už v seznamu jsou"); break;
     case "castdel": collectCast(); ui.sheet.data.splice(+el.getAttribute("data-i"),1); render(); break;
     case "limadd": collectCast(); var ci=ui.sheet.data[+el.getAttribute("data-i")]; (ci.limits=ci.limits||[]).push({date:d.date||todayISO(),until:"17:00"}); render(); break;
     case "limdel": collectCast(); ui.sheet.data[+el.getAttribute("data-i")].limits.splice(+el.getAttribute("data-j"),1); render(); break;
     case "castsave": collectCast();
       var renamed=0, oldById={}; castList().forEach(function(c){oldById[c.id]=c.name;});
       ui.sheet.data.forEach(function(c){var o=oldById[c.id], n=c.name.trim(); if(o&&n&&fold(o.trim())!==fold(n))renamed+=renameRole(o,n); else if(o&&n&&o.trim()!==n)renamed+=renameRole(o,n);});
-      S.cast=ui.sheet.data.filter(function(c){return c.name.trim();}).map(function(c){return {id:c.id||uid(),name:c.name.trim(),limits:(c.limits||[]).filter(function(l){return l.date&&l.until;})};});
+      S.cast=ui.sheet.data.filter(function(c){return c.name.trim();}).map(function(c){return {id:c.id||uid(),name:c.name.trim(),actor:String(c.actor||"").trim(),limits:(c.limits||[]).filter(function(l){return l.date&&l.until;})};});
       S.cast=castSorted();
       ui.sheet=null; changed(); toast(renamed?"Herci uloženi · jméno změněno v "+renamed+" "+(renamed===1?"obraze":"obrazech"):"Herci uloženi"); break;
     case "newplanok":{
