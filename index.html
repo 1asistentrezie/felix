@@ -1175,7 +1175,7 @@ function rowHTML(r){
   else if(canEdit&&locked) state='<span class="stav s-none locked" title="Nejdřív uzavřete předchozí obraz"><span>STAV</span><span class="t">po předchozím</span></span>';
   else state=r.status?'<span class="stav s-'+r.status+'">'+inner+'</span>':'<span class="wait">čeká</span>';
   return '<li class="row shot'+(r.status==="rolling"?' current':'')+(r.status==="done"?' done':'')+(r.status==="moved"?' moved':'')+(r.status==="partial"?' partial':'')+'" data-id="'+r.id+'">'+h+
-    '<span class="time'+paceCls(r)+'"'+tapAttr+'><span>'+(time||"—")+'</span>'+(spanMin(r.from,r.to)!=null||r.shots?'<span class="durs">'+(spanMin(r.from,r.to)!=null?'<span class="dur">'+(r.shots?fmtDurS(spanMin(r.from,r.to)):fmtDur(spanMin(r.from,r.to)))+'</span>':'')+(r.shots?'<span class="dur zbd">Záběrů: '+esc(r.shots)+'</span>':'')+'</span>':'')+paceHTML(r)+planLine(r)+'</span>'+
+    '<span class="time'+paceCls(r)+'"'+tapAttr+'><span>'+(time||"—")+'</span>'+(spanMin(r.from,r.to)!=null||r.shots?'<span class="durs">'+(spanMin(r.from,r.to)!=null?'<span class="dur">'+(r.shots?fmtDurS(spanMin(r.from,r.to)):fmtDur(spanMin(r.from,r.to)))+'</span>':'')+(r.shots?'<span class="dur zbd">Záběrů: '+esc(r.shots)+'</span>':'')+'</span>':'')+wxRowHTML(r)+paceHTML(r)+planLine(r)+'</span>'+
     '<span class="no'+(String(r.scene||"").length>6?' sz-l':String(r.scene||"").length>4?' sz-m':'')+'"'+tapAttr+'><small>OBRAZ</small>'+esc(r.scene||"–")+'</span>'+
     infoHTML(r,tapAttr)+
     '<span class="mr"><span class="motif"'+tapAttr+'>'+esc(r.motif||"")+(r.note?'<span class="memo">'+esc(r.note)+'</span>':'')+
