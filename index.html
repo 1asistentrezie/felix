@@ -1,4 +1,5 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>
+.acttab .aact{font-weight:500;color:var(--muted)}:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 <title>Natáčení FELIX</title>
 <meta name="theme-color" content="#161B1E">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -857,7 +858,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="19. 11. 17:40";
+var APP_BUILD="19. 11. 21:30";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1718,7 +1719,7 @@ function actorsHTML(d,hl){hl=hl||[];var E=endedActors(d),R=dayActors(d),fd=actor
   var hlNow=hl.filter(function(a){return fd.indexOf(a)>=0;});
   return '<h2>Herci – '+esc(d.label||"")+(d.date?' · '+esc(fmtDate(d.date)):'')+'</h2>'+(hlNow.length?'<p class="acthl">'+hlNow.map(function(a){return '<b>'+esc(a)+'</b>';}).join(", ")+(hlNow.length>1?' už dnes nemají žádný obraz.':' už dnes nemá žádný obraz.')+' Skončil'+(hlNow.length>1?'i':'')+'? Potvrď v tabulce a zapíše se to do plánu.</p>':'')+(R.length?'<div class="actwrap"><table class="acttab"><thead><tr><th>Role</th>'+SH.map(function(r){return '<th class="ash '+stc(r)+'">'+esc(r.scene||"–")+'</th>';}).join("")+'<th>Na place</th><th>Stav</th></tr></thead><tbody>'+
     R.map(function(a){var sh=roleShots(d,a),e=E[fold(a)],fin=fd.indexOf(a)>=0,t0=sh.length?sh[0].from:"",t1=sh.length?(sh[sh.length-1].to||""):"";
-      return '<tr class="'+(e?'ended':fin?'fin':'')+(fin&&hl.indexOf(a)>=0?' hl':'')+'"><td class="ar">'+esc(a)+'</td>'+SH.map(function(r){return sh.indexOf(r)<0?'<td class="as e"></td>':'<td class="as '+stc(r)+'" title="'+esc((r.motif||"")+" "+(r.from||"")+"–"+(r.to||""))+'">'+esc(r.scene||"–")+'</td>';}).join("")+'<td class="at">'+esc(t0)+(t1?'–'+esc(t1):'')+'</td><td class="ast">'+
+      return '<tr class="'+(e?'ended':fin?'fin':'')+(fin&&hl.indexOf(a)>=0?' hl':'')+'"><td class="ar">'+esc(a)+(function(){var c=castByName(a);return c&&c.actor?' <span class="aact">('+esc(c.actor)+')</span>':'';})()+'</td>'+SH.map(function(r){return sh.indexOf(r)<0?'<td class="as e"></td>':'<td class="as '+stc(r)+'" title="'+esc((r.motif||"")+" "+(r.from||"")+"–"+(r.to||""))+'">'+esc(r.scene||"–")+'</td>';}).join("")+'<td class="at">'+esc(t0)+(t1?'–'+esc(t1):'')+'</td><td class="ast">'+
         (e?'<span class="aend">skončil'+(e.t?' '+esc(e.t):'')+'</span>':fin?'<span class="aends"><button class="btn primary ablink" data-act="actendok" data-role="'+esc(a)+'">✓ Skončil – zapsat</button><button class="btn" data-act="actendno1" data-role="'+esc(a)+'">Ne</button></span>':'<span class="amut">točí</span>')+'</td></tr>';}).join("")+
     '</tbody></table></div><p class="memo2 actleg"><i class="as d"></i> natočeno <i class="as p"></i> částečně <i class="as r"></i> probíhá</p>':'<p class="memo2">V tomto dni nejsou u obrazů zadané role.</p>')+
     '<div class="actions"><div class="grp"></div><div class="grp"><button class="btn" data-act="close">Zavřít</button></div></div>';}
