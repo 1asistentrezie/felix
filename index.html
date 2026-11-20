@@ -885,7 +885,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="20. 11. 20:40";
+var APP_BUILD="20. 11. 20:55";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1472,7 +1472,7 @@ function sheetHTML(){
           if(st){if(st.addN)parts.push('+'+st.addN+' '+(st.addN===1?'poznámka':st.addN<5?'poznámky':'poznámek'));if(st.addS)parts.push('+'+st.addS+' '+(st.addS===1?'obraz':st.addS<5?'obrazy':'obrazů'));if(st.time)parts.push(st.time+'× upřesněný čas');if(st.del)parts.push('−'+st.del+' ('+esc(st.removed.join(", "))+')');if(st.kept&&st.kept.length)parts.push('zůstává natočené: '+esc(st.kept.join(", ")));if(!parts.length)parts.push('beze změny');}
           return '<div class="pl a-'+(x.act==="merge"?"replace":x.act)+'"><b>'+esc(pd.label)+'</b><span>'+esc(fmtDate(pd.date))+(pd.shiftFrom?' · '+esc(pd.shiftFrom)+'–'+esc(pd.shiftTo):'')+'<br><small>'+(st?parts.join(' · '):esc(pd.location||""))+'</small></span><em>'+(x.act==="merge"&&x.started?'aktualizovat – stavy zůstanou':AU[x.act])+'</em></div>';}).join("")+'</div>'+
         catalogNote(planCatalog(pp,true))+
-        '<span class="hint">Obrazy a poznámky se převezmou z nové verze (pořadí, časy, nové poznámky). U obrazů, které zůstaly, se zachová vše, co jsi doplnil – stránky scénáře a složky i Moje poznámka. Dny, které už proběhly, se nemění. U dnů, které už se natáčejí, zůstanou stavy obrazů i natočené obrazy, které v nové verzi chybí. Kdyby něco nesedělo, vrátíš to tlačítkem ↶.</span>'+
+        '<span class="hint">Obrazy a poznámky se převezmou z nové verze (pořadí, časy, nové poznámky). U obrazů, které zůstaly, se zachová vše, co jsi doplnil – stránky scénáře a složky i Moje poznámka. Dny, které už proběhly, se nemění. U dnů, které už se natáčejí, zůstanou stavy obrazů i natočené obrazy, které v nové verzi chybí. Přesunuté obrazy, které v nové verzi nejsou, zmizí. Kdyby něco nesedělo, vrátíš to tlačítkem ↶.</span>'+
         '<div class="actions"><div class="grp"><button class="btn" data-act="planfile">Jiný soubor</button></div><div class="grp"><button class="btn" data-act="close">Zrušit</button><button class="btn primary" data-act="planupd"'+(uc.merge+uc["new"]?'':' disabled')+'>Aktualizovat ('+(uc.merge+uc["new"])+')</button></div></div>';
     } else if(pp){
       var opt={past:!!s.past,over:!!s.over}, plan=planPlan(pp,opt), cnt={new:0,replace:0,keep:0,"skip-past":0};
@@ -2399,10 +2399,10 @@ function mergeRows(ex,pd){var nr=planRows(pd),old=ex.rows,used={},st={addN:0,add
     if((o.from||"")!==(k2.from||"")||(o.to||"")!==(k2.to||""))st.time++;
     ["origFrom","origTo","baseFrom","baseTo","rollMoved"].forEach(function(f){delete k2[f];});
     nr[i]=k2;});
-  /* řádky se stavem (natočeno, částečně, přesunuto…), které v nové verzi nejsou, zůstanou na svém místě */
+  /* natočené / rozpracované řádky, které v nové verzi nejsou, zůstanou na svém místě (přesunuté / zrušené zmizí) */
   var map={};nr.forEach(function(r){var k=old.indexOf(r);if(k<0){for(var q=0;q<old.length;q++)if(used[q]&&old[q].id===r.id){k=q;break;}}if(k>=0)map[k]=r;});
   st.kept=[];
-  old.forEach(function(o,k){if(used[k]||!o.status)return;var prev=null;for(var q=k-1;q>=0;q--)if(map[q]){prev=map[q];break;}
+  old.forEach(function(o,k){if(used[k]||!o.status||o.status==="moved")return;var prev=null;for(var q=k-1;q>=0;q--)if(map[q]){prev=map[q];break;}
     var at=prev?nr.indexOf(prev)+1:0;nr.splice(at,0,o);used[k]=1;map[k]=o;st.kept.push(o.type==="shot"?"O:"+(o.scene||"?"):(o.kind||"poznámka"));});
   st.del=old.length-Object.keys(used).length;
   st.removed=old.filter(function(o,k){return !used[k];}).map(function(o){return o.type==="shot"?"O:"+(o.scene||"?"):(o.kind||"poznámka");});
