@@ -836,19 +836,36 @@ var WX={};
 function wxToggle(){return '<label class="wxtog"><input type="checkbox" data-act="wxtoggle"'+(wxOn()?' checked':'')+'> Počasí – hodinový pruh přes směnu (teplota, oblačnost, déšť)</label>';}
 function wxOn(){return LS.getItem("nd.wx")==="1";}
 function wxKey(pl){return pl.lat.toFixed(2)+","+pl.lon.toFixed(2);}
-function wxLoad(pl,force){var k=wxKey(pl),c=WX[k];if(!c){try{c=JSON.parse(LS.getItem("nd.wx."+k)||"null");}catch(_){c=null;}if(c&&c.v!==2)c=null;if(c)WX[k]=c;}
-  if(!force&&c&&Date.now()-c.at<55*60000)return;if(WX["_busy"+k])return;
-  var e=WX["_err"+k];if(!force&&e&&Date.now()-e.at<60000)return;
-  WX["_busy"+k]=1;delete WX["_err"+k];
+/* Předpověď stahuje hlavně editor a ukládá ji do plánu (S.wx) – ostatní ji jen čtou, takže Open-Meteo dostává jen pár dotazů za hodinu.
+   Po chybě se čeká (429 = moc dotazů z této sítě → 20 min), aby se limit nevyčerpával dál. */
+function wxErrGet(k){var e=WX["_err"+k];if(!e){try{e=JSON.parse(LS.getItem("nd.wxerr."+k)||"null");}catch(_){e=null;}if(e)WX["_err"+k]=e;}return e;}
+function wxLoad(pl,force){var k=wxKey(pl),c=WX[k],sh=S.wx&&S.wx[k]&&S.wx[k].v===2?S.wx[k]:null;
+  if(!c){try{c=JSON.parse(LS.getItem("nd.wx."+k)||"null");}catch(_){c=null;}if(c&&c.v!==2)c=null;}
+  if(sh&&(!c||sh.at>c.at))c=sh;
+  if(c)WX[k]=c;
+  var maxAge=(canEdit?55:180)*60000;
+  if(!force&&c&&Date.now()-c.at<maxAge)return;
+  if(!force&&!canEdit&&sh&&Date.now()-sh.at<6*3600000)return;
+  if(WX["_busy"+k])return;
+  var e=wxErrGet(k);if(!force&&e&&Date.now()<e.until)return;
+  WX["_busy"+k]=1;
   var base="https://api.open-meteo.com/v1/forecast?latitude="+pl.lat+"&longitude="+pl.lon+"&hourly=temperature_2m,cloud_cover,precipitation_probability,precipitation&timezone=Europe%2FPrague";
-  var get=function(u){return fetch(u,{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("server "+r.status);return r.json();}).then(function(j){if(!j||!j.hourly)throw new Error(j&&j.reason||"prázdná odpověď");return j.hourly;});};
+  var get=function(u){return fetch(u,{cache:"no-store"}).then(function(r){if(!r.ok){var x=new Error("server "+r.status);x.status=r.status;throw x;}return r.json();}).then(function(j){if(!j||!j.hourly)throw new Error(j&&j.reason||"prázdná odpověď");return j.hourly;});};
   var errs=[];
-  /* ČHMÚ ALADIN (nejbližší ~3 dny, po hodinách) + obecná předpověď na dalších až 16 dní */
   Promise.all([get(base+"&forecast_days=4&models=chmi_aladin_seamless").catch(function(x){errs.push(x);return null;}),get(base+"&forecast_days=16").catch(function(x){errs.push(x);return null;})]).then(function(R){
     WX["_busy"+k]=0;var m={},put=function(H,src){if(!H)return;H.time.forEach(function(t,i){var T=H.temperature_2m[i],C=H.cloud_cover[i];if(T==null||C==null||m[t])return;var P=H.precipitation_probability[i],Q=H.precipitation[i];m[t]=[Math.round(T),Math.round(C),P==null?0:Math.round(P),Q==null?0:Q,src];});};
     put(R[0],"ČHMÚ");put(R[1],"ECMWF/DWD");
-    if(!Object.keys(m).length){var x=errs[0];WX["_err"+k]={at:Date.now(),msg:x&&x.message?x.message:"bez spojení"};}
-    else{WX[k]={v:2,at:Date.now(),h:m};try{LS.setItem("nd.wx."+k,JSON.stringify(WX[k]));}catch(_){}}
+    if(!Object.keys(m).length){
+      var x=errs[0],busy=errs.some(function(z){return z.status===429;}),prev=wxErrGet(k),n=prev&&Date.now()-prev.at<6*3600000?(prev.n||1)+1:1;
+      var wait=busy?20*60000:Math.min(30*60000,2*60000*n);
+      var er={at:Date.now(),until:Date.now()+wait,n:n,busy:busy,msg:x&&x.message?x.message:"bez spojení"};
+      WX["_err"+k]=er;try{LS.setItem("nd.wxerr."+k,JSON.stringify(er));}catch(_){}
+    }else{
+      delete WX["_err"+k];try{LS.removeItem("nd.wxerr."+k);}catch(_){}
+      var now={v:2,at:Date.now(),h:m};WX[k]=now;try{LS.setItem("nd.wx."+k,JSON.stringify(now));}catch(_){}
+      if(canEdit){var dates={};S.days.forEach(function(dd){if(dd.date)dates[dd.date]=1;});var hh={};Object.keys(m).forEach(function(t){if(dates[t.slice(0,10)])hh[t]=m[t];});
+        var W={};Object.keys(S.wx||{}).forEach(function(q){if(q!==k&&S.wx[q]&&Date.now()-S.wx[q].at<86400000)W[q]=S.wx[q];});W[k]={v:2,at:now.at,h:hh};S.wx=W;try{queueSave();}catch(_){}}
+    }
     if(!ui.sheet&&!ui.drag)render();else{var el=document.getElementById("wxStrip");if(el)el.outerHTML=wxHTML(day());}});}
 function wxRowHTML(r){if(!wxOn()||!r.from)return "";var d=day();if(!d||!d.date)return "";var c=WX[wxKey(sunPlace(d))];if(!c)return "";
   var f=toMin(r.from),t=toMin(r.to||r.from);if(f==null)return "";if(t==null||t<f)t=f;var cl=0,rp=0,mm=0,n=0;
@@ -860,15 +877,15 @@ function wxHTML(d){if(!wxOn()||!d||!d.date)return "";var pl=sunPlace(d),k=wxKey(
   var nw=new Date(),nowH=d.date===todayISO()?nw.getHours():-1,cells="",any=false;
   for(var h=h0;h<=Math.min(23,h1);h++){var v=c&&c.h[d.date+"T"+pad(h)+":00"];if(v)any=true;
     cells+='<span class="wxc'+(h===nowH?' now':'')+'" style="--ch:'+(v?Math.max(2,Math.round(v[1]*0.18)):0)+'px;--rh:'+(v?Math.max(v[2]?2:0,Math.round(v[2]*0.18)):0)+'px" title="'+pad(h)+':00'+(v?' · '+v[0]+' °C · oblačnost '+v[1]+' % · déšť '+v[2]+' %'+(v[3]?' ('+v[3]+' mm)':''):'')+'"><i class="wxh">'+h+':00</i>'+(v?'<span class="wxp"><s>'+v[1]+'%</s><s class="r">'+v[2]+'%</s></span>':'')+'<span class="wxm"><b>'+(v?v[0]+'°':'·')+'</b><span class="wxb"><em class="cl"></em><em class="rn"></em></span></span>'+(v&&(v[2]>0||v[3]>0)?'<u'+(v[3]>0?'':' class="n"')+'>'+(Math.round(v[3]*10)/10).toFixed(1)+' mm</u>':'<u class="z"></u>')+'</span>';}
-  var er=WX["_err"+k],src=c&&c.h[d.date+"T"+pad(h0)+":00"],chm=false;for(var hh=h0;hh<=Math.min(23,h1);hh++){var vv=c&&c.h[d.date+"T"+pad(hh)+":00"];if(vv&&vv[4]==="ČHMÚ")chm=true;}
-  var msg=!c?(er?'<span class="wxna">Předpověď se nepodařilo načíst ('+esc(er.msg)+') <button class="btn sm" data-act="wxretry">Zkusit znovu</button></span>':'<span class="wxna">Načítám předpověď počasí…</span>'):(any?cells:'<span class="wxna">Předpověď pro tento den zatím není (max. 16 dní dopředu)</span>');
+  var er=wxErrGet(k),src=c&&c.h[d.date+"T"+pad(h0)+":00"],chm=false;for(var hh=h0;hh<=Math.min(23,h1);hh++){var vv=c&&c.h[d.date+"T"+pad(hh)+":00"];if(vv&&vv[4]==="ČHMÚ")chm=true;}
+  var msg=!c?(er?'<span class="wxna">'+(er.busy?'Služba počasí teď odmítá dotazy z této sítě (příliš mnoho dotazů). Další pokus v '+new Date(er.until).toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"})+'.':'Předpověď se nepodařilo načíst ('+esc(er.msg)+').')+' <button class="btn sm" data-act="wxretry">Zkusit znovu</button></span>':'<span class="wxna">Načítám předpověď počasí…</span>'):(any?cells:'<span class="wxna">Předpověď pro tento den zatím není (max. 16 dní dopředu)</span>');
   return '<div class="wxstrip" id="wxStrip" title="Počasí · '+esc(pl.name)+(chm?' · model ČHMÚ ALADIN':'')+(c?' · aktualizováno '+new Date(c.at).toLocaleTimeString("cs-CZ",{hour:"2-digit",minute:"2-digit"}):'')+'">'+msg+'</div>';}
 function themeTiles(){return '<div class="themes">'+THEMES.map(function(t){return '<button class="thm'+(curTheme()===t[0]?' sel':'')+'" data-act="theme" data-v="'+t[0]+'"><span class="sw">'+t[2].map(function(c){return '<i style="background:'+c+'"></i>';}).join("")+'</span>'+esc(t[1])+'</button>';}).join("")+'</div>'+wxToggle();}
 var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.2 0 1.8-.8 1.8-1.7 0-1.1-.9-1.5-.9-2.5 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1.4"/><circle cx="10" cy="7" r="1.4"/><circle cx="14.5" cy="7" r="1.4"/><circle cx="17" cy="10.5" r="1.4"/></svg>';
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="20. 11. 19:45";
+var APP_BUILD="20. 11. 20:00";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -3632,7 +3649,7 @@ function publicState(){
   if(!ds.length){var all=S.days.filter(function(d){return d.date;}).sort(function(a,b){return a.date<b.date?-1:1;});ds=all.slice(-1);}
   if(!ds.length)ds=S.days.slice(0,1);
   ds=ds.map(function(d){var c=JSON.parse(JSON.stringify(d));c.rows.forEach(function(r){if(r.type!=="shot")return;var de=rowDesc(r),lo=rowLoc(r);if(de)r.desc=de;if(lo)r.loc=lo;});return c;});
-  return {project:S.project||"",plan:S.plan||null,cast:castList(),scripts:scripts(),slozky:docList("brk"),scriptMarks:S.scriptMarks||{},locImg:S.locImg||null,sceneImg:S.sceneImg||{},brk:S.brk||{},brkCats:S.brkCats||[],days:ds,savedAt:S.savedAt};
+  return {project:S.project||"",plan:S.plan||null,cast:castList(),scripts:scripts(),slozky:docList("brk"),scriptMarks:S.scriptMarks||{},locImg:S.locImg||null,wx:S.wx||null,sceneImg:S.sceneImg||{},brk:S.brk||{},brkCats:S.brkCats||[],days:ds,savedAt:S.savedAt};
 }
 function cacheKey(){return "nd.cache."+liveRow;}
 function cacheSave(){try{LS.setItem(cacheKey(),JSON.stringify(S));}catch(_){}}
