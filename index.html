@@ -885,7 +885,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="20. 11. 20:00";
+var APP_BUILD="20. 11. 20:10";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -1023,8 +1023,8 @@ function leftTxt(d){
   return l>=0?dur(l):"skončila";
 }
 /* ---------- velikost zobrazení (zoom + / −), pamatuje se v tomto prohlížeči ---------- */
-var ZOOMS=[.6,.7,.8,.9,1,1.1,1.2,1.3,1.4,1.5,1.6];
-function zoomGet(){var z=+(LS.getItem("nd.zoom")||1);return z>=.5&&z<=2?z:1;}
+var ZOOMS=[.3,.35,.4,.45,.5,.55,.6,.7,.8,.9,1,1.1,1.2,1.3,1.4,1.5,1.6];
+function zoomGet(){var z=+(LS.getItem("nd.zoom")||1);return z>=.25&&z<=2?z:1;}
 function zoomApply(){var a=document.getElementById("app"),z=zoomGet();if(!a)return;a.style.zoom=z===1?"":String(z);a.style.maxWidth=z===1?"":(1180/z)+"px";a.style.setProperty("--unzoom",z===1?"1":String(1/z));}
 function zoomStep(dir){var z=zoomGet(),i=0,b=1e9;ZOOMS.forEach(function(v,j){var dd=Math.abs(v-z);if(dd<b){b=dd;i=j;}});i=Math.max(0,Math.min(ZOOMS.length-1,i+dir));try{LS.setItem("nd.zoom",String(ZOOMS[i]));}catch(_){}zoomApply();render();}
 function zoomHTML(ph){var z=zoomGet();return '<div class="s-zoom'+(ph?' ph':'')+'" role="group" aria-label="Velikost zobrazení"><button data-act="zoomout" aria-label="Zmenšit"'+(z<=ZOOMS[0]?' disabled':'')+'>−</button><button class="zv" data-act="zoomreset" title="Původní velikost">'+Math.round(z*100)+' %</button><button data-act="zoomin" aria-label="Zvětšit"'+(z>=ZOOMS[ZOOMS.length-1]?' disabled':'')+'>+</button></div>';}
