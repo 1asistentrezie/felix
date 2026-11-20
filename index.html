@@ -885,7 +885,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="20. 11. 20:10";
+var APP_BUILD="20. 11. 20:20";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
@@ -2787,7 +2787,7 @@ function showPdf(r,k,full){PDF_ROW=r;
   var pn=document.createElement("div");pn.className="pdfpanel"+(wide?" wide":"");pn.id="pdfPanel";
   var lblAll=k==="brk"?"Celé složky":"Celý scénář";
   pn.innerHTML='<div class="pdfhead"><b>'+(k==="brk"?"Složka · ":"")+'O:'+esc(r.scene||"")+'</b><span>'+esc(r.motif||"")+' · str. '+from+(to!==from?'–'+to:'')+'</span>'+(wide?pdfTimeHTML(r):'')+
-    (canEdit&&r.id&&rowById(r.id)?'<button class="btn" data-act="pgedit" data-id="'+r.id+'" data-dk="'+k+'">Stránky…</button>':'')+(k==="script"?'<button class="btn pdfsplit'+(LS.getItem("nd.pdfsplit")==="1"&&wide?' on':'')+'" id="pdfSplit" title="Složka obrazu vedle scénáře">📁 Složka</button>':'')+'<button class="btn" id="pdfAll">'+(full?'Jen tento obraz':lblAll)+'</button><button class="btn pdfwide" id="pdfWide" title="'+(wide?'Zmenšit na polovinu':'Roztáhnout na celou obrazovku')+'">'+(wide?'⤡ Zmenšit':'⤢ Roztáhnout')+'</button><button class="btn" id="pdfClose">Zavřít</button><b class="pdfclock" id="pdfClock">'+nowHM()+'</b></div>'+annBarHTML()+'<div class="pdfpages" id="pdfPages"><div class="pdfmsg">Načítám…</div></div>';
+    (canEdit&&r.id&&rowById(r.id)?'<button class="btn" data-act="pgedit" data-id="'+r.id+'" data-dk="'+k+'">Stránky…</button>':'')+'<button class="btn" id="pdfAll">'+(full?'Jen tento obraz':lblAll)+'</button><button class="btn pdfwide" id="pdfWide" title="'+(wide?'Zmenšit na polovinu':'Roztáhnout na celou obrazovku')+'">'+(wide?'⤡ Zmenšit':'⤢ Roztáhnout')+'</button><button class="btn" id="pdfClose">Zavřít</button><b class="pdfclock" id="pdfClock">'+nowHM()+'</b></div>'+annBarHTML()+'<div class="pdfpages" id="pdfPages"><div class="pdfmsg">Načítám…</div></div>';
   var hd=pn.querySelector(".pdfhead");if(hd){var sb=document.createElement("div");sb.className="pdfsearch";
     sb.innerHTML='<input id="pdfQ" type="search" enterkeyhint="search" placeholder="Hledat…" autocomplete="off"><button class="btn" id="pdfQgo" aria-label="Hledat" title="Hledat">🔍</button><span id="pdfQn" class="pdfqn"></span><button class="btn" id="pdfQprev" aria-label="Předchozí výskyt">‹</button><button class="btn" id="pdfQnext" aria-label="Další výskyt">›</button>';
     hd.parentNode.insertBefore(sb,hd.nextSibling);
@@ -2810,12 +2810,12 @@ function showPdf(r,k,full){PDF_ROW=r;
   document.getElementById("pdfClose").onclick=closePdf;
   document.getElementById("pdfAll").onclick=function(){var y=null;showPdf(r,k,!full);};
   var spb=document.getElementById("pdfSplit");if(spb)spb.onclick=function(){var on=!(LS.getItem("nd.pdfsplit")==="1"&&wide);try{LS.setItem("nd.pdfsplit",on?"1":"0");if(on)LS.setItem("nd.pdfwide","1");}catch(_){}PDF_RESUME=pdfPos();PDF_RESUME.on=AS.on;showPdf(r,k,full);};
-  if(k==="script"&&wide&&LS.getItem("nd.pdfsplit")==="1")brkSplit(r,sc,full);
+
   document.getElementById("pdfWide").onclick=function(){try{LS.setItem("nd.pdfwide",wide?"0":"1");}catch(_){}PDF_RESUME=pdfPos();PDF_RESUME.on=AS.on;showPdf(r,k,full);};
   PDF_FROM=from;
   openPdf(url).then(function(doc){ANN.pdf=doc;
     var box=document.getElementById("pdfPages"); if(!box)return; box.innerHTML="";
-    var PZ=pdfZoom(),w=(box.clientWidth-24)*PZ, dpr=Math.min(window.devicePixelRatio||1,2)*(PZ>1?Math.min(1.5,PZ):1);pzCtl(box,r,k,full);
+    var PZ=1,w=(box.clientWidth-24), dpr=Math.min(window.devicePixelRatio||1,2);
     var a=full?1:from, b=full?doc.numPages:Math.min(to,doc.numPages);
     return doc.getPage(Math.min(from,doc.numPages)).then(function(p0){
       var v0=p0.getViewport({scale:1}), ratio=v0.height/v0.width;
