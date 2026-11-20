@@ -838,7 +838,7 @@ function wxToggle(){return '<label class="wxtog"><input type="checkbox" data-act
 function wxOn(){return LS.getItem("nd.wx")==="1";}
 function wxKey(pl){return pl.lat.toFixed(2)+","+pl.lon.toFixed(2);}
 /* Předpověď stahuje hlavně editor a ukládá ji do plánu (S.wx) – ostatní ji jen čtou, takže Open-Meteo dostává jen pár dotazů za hodinu.
-   Po chybě se čeká (429 = moc dotazů z této sítě → 20 min), aby se limit nevyčerpával dál. */
+   Po chybě se čeká (429 = moc dotazů z této sítě → 5 min), aby se limit nevyčerpával dál. */
 function wxErrGet(k){var e=WX["_err"+k];if(!e){try{e=JSON.parse(LS.getItem("nd.wxerr."+k)||"null");}catch(_){e=null;}if(e)WX["_err"+k]=e;}return e;}
 function wxLoad(pl,force){var k=wxKey(pl),c=WX[k],sh=S.wx&&S.wx[k]&&S.wx[k].v===2?S.wx[k]:null;
   if(!c){try{c=JSON.parse(LS.getItem("nd.wx."+k)||"null");}catch(_){c=null;}if(c&&c.v!==2)c=null;}
@@ -858,7 +858,7 @@ function wxLoad(pl,force){var k=wxKey(pl),c=WX[k],sh=S.wx&&S.wx[k]&&S.wx[k].v===
     put(R[0],"ČHMÚ");put(R[1],"ECMWF/DWD");
     if(!Object.keys(m).length){
       var x=errs[0],busy=errs.some(function(z){return z.status===429;}),prev=wxErrGet(k),n=prev&&Date.now()-prev.at<6*3600000?(prev.n||1)+1:1;
-      var wait=busy?20*60000:Math.min(30*60000,2*60000*n);
+      var wait=busy?5*60000:Math.min(30*60000,2*60000*n);
       var er={at:Date.now(),until:Date.now()+wait,n:n,busy:busy,msg:x&&x.message?x.message:"bez spojení"};
       WX["_err"+k]=er;try{LS.setItem("nd.wxerr."+k,JSON.stringify(er));}catch(_){}
     }else{
@@ -886,7 +886,7 @@ var PALETTE='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 
 function curTheme(){var t="b";try{t=LS.getItem("nd.theme")||"b";}catch(_){}return t;}
 function applyTheme(t){try{if(t&&t!=="b")document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");}catch(_){}}
 applyTheme(curTheme());
-var APP_BUILD="20. 11. 20:00";
+var APP_BUILD="20. 11. 21:15";
 var ALERT_KIND="POZOR ZMĚNA PROGRAMU:";
 var MARTINI_KIND="MARTINI SHOT!", KONEC_KIND="KONEC NATÁČENÍ, DĚKUJI VŠEM!";
 var KINDS = ["Cestovní čas","Příprava","Stěhování","Oběd","Likvidace","Skončil herec",MARTINI_KIND,KONEC_KIND,ALERT_KIND,"Závazek","Jiné"];
