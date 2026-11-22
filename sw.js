@@ -1,5 +1,5 @@
 /* Natáčecí den – offline cache. App files: network first (updates arrive at once), libraries: cache first. Supabase data is never cached here, except script/breakdown PDFs (cache nd-docs) for offline use. */
-const CACHE = "felix-v52";
+const CACHE = "felix-v53";
 const SHELL = ["./", "index.html", "config.js", "manifest.webmanifest", "felix-klapka-192.png", "felix-klapka-512.png", "felix-klapka-180.png", "lib/pdf.min.mjs", "lib/pdf.worker.min.mjs"];
 const DOCS = "felix-docs";
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
